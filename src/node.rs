@@ -14,11 +14,13 @@ impl Node {
         }
     }
     pub fn new_from_children(name: String, children: Vec<Node>) -> Node {
-        Node {
+        let mut node = Node {
             name,
             size: None,
             children,
-        }
+        };
+        node.get_or_compute_size();
+        node
     }
 
     pub fn add_child(&mut self, child: Node) {
