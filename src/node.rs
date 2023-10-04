@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub struct Node {
     pub size: Option<i64>,
@@ -69,10 +68,13 @@ mod tests {
 
     #[test]
     fn test_basic_size_computation() {
-        let mut tree = Node::new_from_children("root".to_string(), vec![
+        let mut tree = Node::new_from_children(
+            "root".to_string(),
+            vec![
                 Node::new_from_size("child1".to_string(), 5),
                 Node::new_from_size("child2".to_string(), 7),
-            ]);
+            ],
+        );
 
         assert_eq!(tree.refresh_size(), 12);
         assert_eq!(tree.get_or_compute_size(), 12);

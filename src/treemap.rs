@@ -1,6 +1,5 @@
-use macroquad::prelude::{Rect, Vec2};
 use crate::node::Node;
-
+use macroquad::prelude::{Rect, Vec2};
 
 #[derive(Debug, Clone)]
 pub struct MapNode {
@@ -32,7 +31,10 @@ impl MapNode {
     }
 
     /// aspect ratio is width / height, e.g. 16 / 9 = 1.7777
-    pub fn arrange(&mut self, aspect_ratio: f32) {
+    pub fn arrange_top_level(&mut self, aspect_ratio: f32) {
+        self.arrange_recursive(Rect::new(0.0, 0.0, 1.0, 1.0), aspect_ratio);
+    }
+    pub fn arrange_children(&mut self, aspect_ratio: f32) {
         self.children.sort_by(|a, b| b.size.cmp(&a.size));
         if aspect_ratio > 1.0 {
             // arrange horizontally
@@ -44,7 +46,26 @@ impl MapNode {
             }
         } else {
             // arrange vertically
-            todo!();
+            let mut previous_end = 0.0;
+            for child in &mut self.children {
+                let height = child.size as f32 / self.size as f32;
+                child.rect = Rect::new(0.0, previous_end, 1.0, height);
+                previous_end += height;
+            }
+        }
+    }
+
+    fn arrange_recursive(&mut self, rect: Rect, aspect_ratio: f32) {
+        self.arrange_children(aspect_ratio);
+        self.rect = Rect::new(
+            rect.x + self.rect.x / rect.w,
+            rect.y + self.rect.y / rect.h,
+            rect.w * self.rect.w,
+            rect.h * self.rect.h,
+        );
+        for child in &mut self.children {
+            let child_aspect_ratio = self.rect.w / self.rect.h;
+            child.arrange_recursive(self.rect, child_aspect_ratio);
         }
     }
 
@@ -61,8 +82,7 @@ impl MapNode {
 
 impl PartialEq for MapNode {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-         && self.size == other.size
+        self.name == other.name && self.size == other.size
     }
 }
 
@@ -88,10 +108,7 @@ mod tests {
             name: "root".to_string(),
             size: 100,
             rect: Rect::new(0.0, 0.0, 1.0, 1.0),
-            children: vec![
-                child_1.clone(),
-                child_2.clone(),
-            ],
+            children: vec![child_1.clone(), child_2.clone()],
         };
         assert_eq!(map.deepest_child(Vec2::new(0.0, 0.0)), &child_1);
         assert_eq!(map.deepest_child(Vec2::new(0.5, 0.5)), &child_2);
