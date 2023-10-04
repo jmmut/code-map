@@ -13,7 +13,7 @@ pub fn bytes_per_file(folder: &str) -> Result<Node, AnyError> {
             nodes.push(bytes_per_file(entry?.path().to_str().unwrap())?);
         }
         let mut parent = Node::new_from_children(folder.to_string(), nodes);
-        parent.get_size();
+        parent.get_or_compute_size();
         Ok(parent)
     } else {
         warn!("{} is not a file or a directory. Probably a symlink, but will be ignored", folder);

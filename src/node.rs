@@ -38,17 +38,20 @@ impl Node {
             size
         }
     }
-    pub fn get_size(&mut self) -> i64 {
+    pub fn get_or_compute_size(&mut self) -> i64 {
         if let Some(size) = self.size {
             size
         } else {
             let mut size = 0;
             for child in &mut self.children {
-                size += child.get_size();
+                size += child.get_or_compute_size();
             }
             self.size = Some(size);
             size
         }
+    }
+    pub fn get_size(&self) -> i64 {
+        self.size.unwrap()
     }
 
     pub fn is_leaf(&self) -> bool {
@@ -72,6 +75,6 @@ mod tests {
             ]);
 
         assert_eq!(tree.refresh_size(), 12);
-        assert_eq!(tree.get_size(), 12);
+        assert_eq!(tree.get_or_compute_size(), 12);
     }
 }
