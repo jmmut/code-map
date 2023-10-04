@@ -1,16 +1,33 @@
+mod node;
+
 use macroquad::prelude::*;
 
-#[macroquad::main("code-map")]
+
+const DEFAULT_WINDOW_WIDTH: i32 = 1200;
+const DEFAULT_WINDOW_HEIGHT: i32 = 675;
+const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
+
+#[macroquad::main(window_conf)]
 async fn main() {
     loop {
-        clear_background(RED);
-
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+        if is_key_pressed(KeyCode::Escape) {
+            break;
+        }
+        clear_background(LIGHTGRAY);
+        let width = screen_width();
+        let height = screen_height();
+        draw_rectangle_lines(width * 0.05, height * 0.05, width * 0.9, height * 0.75, 1.0, BLACK);
 
         next_frame().await
+    }
+}
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: DEFAULT_WINDOW_TITLE.to_owned(),
+        window_width: DEFAULT_WINDOW_WIDTH,
+        window_height: DEFAULT_WINDOW_HEIGHT,
+        high_dpi: true,
+        ..Default::default()
     }
 }
