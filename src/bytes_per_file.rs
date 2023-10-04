@@ -1,11 +1,15 @@
 use crate::node::Node;
 use crate::AnyError;
-use macroquad::prelude::{info, warn};
+use macroquad::prelude::{error, warn};
 use std::fs;
 use std::path::Path;
 
 pub fn bytes_per_file(folder: &str) -> Result<Node, AnyError> {
-    if Path::new(folder).is_file() {
+    let path = Path::new(folder);
+    if path.is_symlink() {
+        warn!("{} is a symlink and will be ignored", folder);
+        Ok(Node::new_from_size(folder.to_string(), 0))
+    } else if Path::new(folder).is_file() {
         Ok(Node::new_from_size(
             folder.to_string(),
             fs::metadata(folder)?.len() as i64,
@@ -19,8 +23,8 @@ pub fn bytes_per_file(folder: &str) -> Result<Node, AnyError> {
         parent.get_or_compute_size();
         Ok(parent)
     } else {
-        warn!(
-            "{} is not a file or a directory. Probably a symlink, but will be ignored",
+        error!(
+            "{} is not a file nor a directory nor a symlink. Ignoring...",
             folder
         );
         Ok(Node::new_from_size(folder.to_string(), 0))

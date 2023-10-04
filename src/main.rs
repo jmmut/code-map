@@ -33,7 +33,7 @@ async fn main() -> Result<(), AnyError> {
         (width * 0.9).round(),
         (height * 0.75).round(),
     );
-    treemap.arrange_top_level(available);
+    treemap.arrange_top_level(available, 4.0);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -49,14 +49,7 @@ async fn main() -> Result<(), AnyError> {
         );
         clear_background(LIGHTGRAY);
 
-        draw_rectangle_lines(
-            (width * 0.05).round(),
-            (height * 0.05).round(),
-            available.w,
-            available.h,
-            1.0,
-            BLACK,
-        );
+        draw_node(&treemap, available, font_size, 1.0, BLACK);
 
         // if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_position = Vec2::from(mouse_position());
@@ -75,11 +68,10 @@ async fn main() -> Result<(), AnyError> {
                 font_size,
                 BLACK,
             );
+            draw_node(deepest_child, available, font_size, 2.0, PURPLE);
+
         }
         // }
-        for child in &treemap.children {
-            draw_node(child, available, font_size);
-        }
         next_frame().await
     }
     // println!("{:#?}", tree);
@@ -108,14 +100,14 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn draw_node(node: &MapNode, mut available: Rect, font_size: f32) {
+fn draw_node(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
 
 
     let w = (node.rect.unwrap().w).round();
     let h = (node.rect.unwrap().h).round();
     let x = (node.rect.unwrap().x).round();
     let y = (node.rect.unwrap().y).round();
-    draw_rectangle_lines(x, y, w, h, 1.0, BLACK);
+    draw_rectangle_lines(x, y, w, h, thickness, color);
     // draw_text(
     //     &node.name,
     //     x + 1.5 * font_size,
@@ -131,6 +123,6 @@ fn draw_node(node: &MapNode, mut available: Rect, font_size: f32) {
     //     BLACK,
     // );
     for child in &node.children {
-        draw_node(child, available, font_size);
+        draw_node(child, available, font_size, thickness, color);
     }
 }
