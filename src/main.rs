@@ -1,5 +1,6 @@
 mod node;
 mod bytes_per_file;
+mod treemap;
 
 use macroquad::prelude::*;
 
@@ -20,6 +21,8 @@ async fn main() -> Result<(), AnyError> {
         ".".to_string()
     };
     let tree = bytes_per_file::bytes_per_file(&folder).unwrap();
+    let mut treemap = treemap::MapNode::new(tree);
+    treemap.arrange(16.0 / 9.0);
     let width = screen_width();
     let height = screen_height();
     let font_size = choose_font_size(width, height);
@@ -33,16 +36,14 @@ async fn main() -> Result<(), AnyError> {
 
         draw_rectangle_lines(width * 0.05, height * 0.05, available_width, available_height, 1.0, BLACK);
 
-        let mut previous_end = 0.0;
-        for child in &tree.children {
-            let child_width = child.get_size() as f32 / tree.get_size() as f32 * available_width;
-            let child_height = available_height;
-            let x = width * 0.05 + previous_end;
-            let y = height * 0.05;
-            draw_rectangle_lines(x, y, child_width, child_height, 1.0, BLACK);
-            draw_text(&child.name, x + 10.0, y + 1.5 * font_size, font_size, BLACK);
-            draw_text(&child.get_size().to_string(), x + 10.0, y + 3.0 * font_size, font_size, BLACK);
-            previous_end += child_width;
+        for child in &treemap.children {
+            let w = child.rect.w * available_width;
+            let h = child.rect.h * available_height;
+            let x = width * 0.05 + child.rect.x * available_width;
+            let y = height * 0.05 + child.rect.y * available_height;
+            draw_rectangle_lines(x, y, w, h, 1.0, BLACK);
+            draw_text(&child.name, x + 1.5 * font_size, y + 1.5 * font_size, font_size, BLACK);
+            draw_text(&child.size.to_string(), x + 1.5 * font_size, y + 3.0 * font_size, font_size, BLACK);
         }
         next_frame().await
     }
