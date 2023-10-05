@@ -35,7 +35,6 @@ impl Node {
             size
         }
     }
-
 }
 
 #[cfg(test)]

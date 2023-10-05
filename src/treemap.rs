@@ -132,47 +132,79 @@ mod tests {
         assert!(rect_eq(a, b), "rects not equal: {:?} != {:?}", a, b);
     }
 
-
     #[test]
     fn test_arrange_recursive() {
         let mut map = MapNode::new(Node::new_from_children(
             "root".to_string(),
             vec![
-                Node::new_from_children("child_1".to_string(), vec![
-                    Node::new_from_size("child_1_1".to_string(), 5),
-                    Node::new_from_size("child_1_2".to_string(), 7),
-                    Node::new_from_size("child_1_3".to_string(), 15),
-                ]),
-                Node::new_from_children("child_2".to_string(), vec![
-                    Node::new_from_size("child_2_1".to_string(), 3),
-                    Node::new_from_size("child_2_2".to_string(), 20),
-                    Node::new_from_size("child_2_3".to_string(), 10),
-                ]),
+                Node::new_from_children(
+                    "child_1".to_string(),
+                    vec![
+                        Node::new_from_size("child_1_1".to_string(), 5),
+                        Node::new_from_size("child_1_2".to_string(), 7),
+                        Node::new_from_size("child_1_3".to_string(), 15),
+                    ],
+                ),
+                Node::new_from_children(
+                    "child_2".to_string(),
+                    vec![
+                        Node::new_from_size("child_2_1".to_string(), 3),
+                        Node::new_from_size("child_2_2".to_string(), 20),
+                        Node::new_from_size("child_2_3".to_string(), 10),
+                    ],
+                ),
             ],
         ));
         let toplevel_rect = Rect::new(0.0, 0.0, 200.0, 100.0);
         map.arrange_top_level(toplevel_rect, 0.0);
         assert_rect_eq(map.rect.unwrap(), toplevel_rect);
-        assert_rect_eq(map.children[0].rect.unwrap(), Rect::new(0.0, 0.0, 33.0 / 60.0 * toplevel_rect.w, 100.0)); // moved the big one to the beginning
-        assert_rect_eq(map.children[1].rect.unwrap(), Rect::new(33.0 / 60.0 * toplevel_rect.w, 0.0, 27.0 / 60.0 * toplevel_rect.w, 100.0));
+        assert_rect_eq(
+            map.children[0].rect.unwrap(),
+            Rect::new(0.0, 0.0, 33.0 / 60.0 * toplevel_rect.w, 100.0),
+        ); // moved the big one to the beginning
+        assert_rect_eq(
+            map.children[1].rect.unwrap(),
+            Rect::new(
+                33.0 / 60.0 * toplevel_rect.w,
+                0.0,
+                27.0 / 60.0 * toplevel_rect.w,
+                100.0,
+            ),
+        );
 
         let width_0 = 33.0 / 60.0 * toplevel_rect.w;
         let width_00 = width_0 * 20.0 / 33.0;
         let width_01 = width_0 * 10.0 / 33.0;
-        let width_02 = width_0 *  3.0 / 33.0;
-        assert_rect_eq(map.children[0].children[0].rect.unwrap(), Rect::new(0.0, 0.0, width_00, 100.0));
-        assert_rect_eq(map.children[0].children[1].rect.unwrap(), Rect::new(width_00, 0.0, width_01, 100.0));
-        assert_rect_eq(map.children[0].children[2].rect.unwrap(), Rect::new(width_00 + width_01, 0.0, width_02, 100.0));
-
+        let width_02 = width_0 * 3.0 / 33.0;
+        assert_rect_eq(
+            map.children[0].children[0].rect.unwrap(),
+            Rect::new(0.0, 0.0, width_00, 100.0),
+        );
+        assert_rect_eq(
+            map.children[0].children[1].rect.unwrap(),
+            Rect::new(width_00, 0.0, width_01, 100.0),
+        );
+        assert_rect_eq(
+            map.children[0].children[2].rect.unwrap(),
+            Rect::new(width_00 + width_01, 0.0, width_02, 100.0),
+        );
 
         let width_1 = 27.0 / 60.0 * toplevel_rect.w;
         let height_1 = toplevel_rect.h;
         let height_10 = height_1 * 15.0 / 27.0;
         let height_11 = height_1 * 7.0 / 27.0;
         let height_12 = height_1 * 5.0 / 27.0;
-        assert_rect_eq(map.children[1].children[0].rect.unwrap(), Rect::new(width_0, 0.0, width_1, height_10));
-        assert_rect_eq(map.children[1].children[1].rect.unwrap(), Rect::new(width_0, height_10, width_1, height_11));
-        assert_rect_eq(map.children[1].children[2].rect.unwrap(), Rect::new(width_0, height_10 + height_11, width_1, height_12));
+        assert_rect_eq(
+            map.children[1].children[0].rect.unwrap(),
+            Rect::new(width_0, 0.0, width_1, height_10),
+        );
+        assert_rect_eq(
+            map.children[1].children[1].rect.unwrap(),
+            Rect::new(width_0, height_10, width_1, height_11),
+        );
+        assert_rect_eq(
+            map.children[1].children[2].rect.unwrap(),
+            Rect::new(width_0, height_10 + height_11, width_1, height_12),
+        );
     }
-
 }

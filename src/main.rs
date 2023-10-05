@@ -2,8 +2,8 @@ mod bytes_per_file;
 mod node;
 mod treemap;
 
-use macroquad::prelude::*;
 use crate::treemap::MapNode;
+use macroquad::prelude::*;
 
 type AnyError = Box<dyn std::error::Error>;
 
@@ -13,21 +13,9 @@ const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
 
 const FONT_SIZE: f32 = 16.0;
 
-const COLORS: &[Color] = &[
-    DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN, DARKGRAY
-];
+const COLORS: &[Color] = &[DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN, DARKGRAY];
 const COLORS_2: &[Color] = &[
-BEIGE,
-ORANGE,
-RED,
-PINK,
-PURPLE,
-VIOLET,
-BLUE,
-SKYBLUE,
-GREEN,
-LIME,
-WHITE,
+    BEIGE, ORANGE, RED, PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
 ];
 
 #[macroquad::main(window_conf)]
@@ -73,9 +61,7 @@ async fn main() -> Result<(), AnyError> {
             let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
             // let previous_end = available.x;
             for (i, node) in nodes_pointed.iter().enumerate() {
-                let Rect {
-                    x, y, w, h
-                } = round_rect(node.rect.unwrap());
+                let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
                 draw_rectangle(x, y, w, h, COLORS_2[i % COLORS_2.len()]);
             }
             let nodes_count = nodes_pointed.len();
@@ -96,7 +82,6 @@ async fn main() -> Result<(), AnyError> {
                 font_size,
                 BLACK,
             );
-
         }
 
         draw_node(&treemap, available, font_size, 1.0, BLACK);
@@ -130,9 +115,7 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
 }
 
 fn draw_node(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
-    let Rect{
-        x, y, w, h
-    } = round_rect(node.rect.unwrap());
+    let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
     draw_rectangle_lines(x, y, w, h, thickness, color);
     // draw_text(
     //     &node.name,
