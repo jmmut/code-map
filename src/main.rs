@@ -13,8 +13,7 @@ const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
 
 const FONT_SIZE: f32 = 16.0;
 
-const COLORS: &[Color] = &[DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN, DARKGRAY];
-const COLORS_2: &[Color] = &[
+const COLORS: &[Color] = &[
     BEIGE, ORANGE, RED, PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
 ];
 
@@ -32,26 +31,18 @@ async fn main() -> Result<(), AnyError> {
     let mut treemap = MapNode::new(tree);
     let width = screen_width();
     let height = screen_height();
-    let mut available = Rect::new(
+    let available = Rect::new(
         (width * 0.05).round(),
-        (height * 0.05).round(),
+        (width * 0.05).round(),
         (width * 0.9).round(),
         (height * 0.75).round(),
     );
-    treemap.arrange_top_level(available, 0.0);
+    treemap.arrange_top_level(available, 2.0);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
             break;
         }
-        let width = screen_width();
-        let height = screen_height();
-        available = Rect::new(
-            (width * 0.05).round(),
-            (height * 0.05).round(),
-            (width * 0.9).round(),
-            (height * 0.75).round(),
-        );
         clear_background(LIGHTGRAY);
 
         let mouse_position = Vec2::from(mouse_position());
@@ -62,23 +53,23 @@ async fn main() -> Result<(), AnyError> {
             // let previous_end = available.x;
             for (i, node) in nodes_pointed.iter().enumerate() {
                 let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-                draw_rectangle(x, y, w, h, COLORS_2[i % COLORS_2.len()]);
+                draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
             }
             let nodes_count = nodes_pointed.len();
             for (i_rev, node) in nodes_pointed.iter().rev().enumerate() {
                 let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
                 draw_rectangle(
                     available.x,
-                    available.y + available.h + 5.0 * font_size - 1.0 * font_size,
+                    2.0 * available.y + available.h,
                     dimensions.width,
                     1.5 * font_size,
-                    COLORS_2[(nodes_count - 1 - i_rev) % COLORS_2.len()],
+                    COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
                 );
             }
             draw_text(
                 &text,
                 available.x,
-                available.y + available.h + 5.0 * font_size,
+                2.0* available.y + available.h + 1.0 * font_size,
                 font_size,
                 BLACK,
             );

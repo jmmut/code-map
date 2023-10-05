@@ -66,6 +66,7 @@ impl MapNode {
         }
     }
 
+    #[allow(unused)]
     pub fn deepest_child(&self, point: Vec2) -> &MapNode {
         let mut result = self;
         for child in &self.children {
