@@ -25,6 +25,11 @@ async fn main() -> Result<(), AnyError> {
     } else {
         ".".to_string()
     };
+    let padding = if args.len() > 2 {
+        args[2].parse::<f32>().unwrap()
+    } else {
+        0.0
+    };
     let tree = bytes_per_file::bytes_per_file(&folder).unwrap();
     let units = "bytes";
 
@@ -37,7 +42,7 @@ async fn main() -> Result<(), AnyError> {
         (width * 0.9).round(),
         (height * 0.75).round(),
     );
-    treemap.arrange_top_level(available, 2.0);
+    treemap.arrange_top_level(available, padding);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
