@@ -33,7 +33,7 @@ async fn main() -> Result<(), AnyError> {
         (width * 0.9).round(),
         (height * 0.75).round(),
     );
-    treemap.arrange_top_level(available, 4.0);
+    treemap.arrange_top_level(available, 0.0);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -49,15 +49,7 @@ async fn main() -> Result<(), AnyError> {
         );
         clear_background(LIGHTGRAY);
 
-        draw_node(&treemap, available, font_size, 1.0, BLACK);
-
-        // if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_position = Vec2::from(mouse_position());
-        // let virtual_position = Vec2::new(
-        //     (mouse_position.x - available.x) / available.w,
-        //     (mouse_position.y - available.y) / available.h,
-        // );
-        // if Rect::new(0.0, 0.0, 1.0, 1.0).contains(virtual_position) {
         if available.contains(mouse_position) {
             let deepest_child = treemap.deepest_child(mouse_position);
             let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
@@ -68,10 +60,15 @@ async fn main() -> Result<(), AnyError> {
                 font_size,
                 BLACK,
             );
-            draw_node(deepest_child, available, font_size, 2.0, PURPLE);
+            let Rect{
+                x, y, w, h
+            } = round_rect(deepest_child.rect.unwrap());
+            draw_rectangle(x, y, w, h, DARKGREEN);
 
         }
-        // }
+
+        draw_node(&treemap, available, font_size, 1.0, BLACK);
+
         next_frame().await
     }
     // println!("{:#?}", tree);
@@ -101,12 +98,9 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
 }
 
 fn draw_node(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
-
-
-    let w = (node.rect.unwrap().w).round();
-    let h = (node.rect.unwrap().h).round();
-    let x = (node.rect.unwrap().x).round();
-    let y = (node.rect.unwrap().y).round();
+    let Rect{
+        x, y, w, h
+    } = round_rect(node.rect.unwrap());
     draw_rectangle_lines(x, y, w, h, thickness, color);
     // draw_text(
     //     &node.name,
@@ -125,4 +119,13 @@ fn draw_node(node: &MapNode, available: Rect, font_size: f32, thickness: f32, co
     for child in &node.children {
         draw_node(child, available, font_size, thickness, color);
     }
+}
+
+fn round_rect(rect: Rect) -> Rect {
+    Rect::new(
+        rect.x.round(),
+        rect.y.round(),
+        rect.w.round(),
+        rect.h.round(),
+    )
 }
