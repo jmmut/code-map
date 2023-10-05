@@ -13,6 +13,32 @@ const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
 
 const FONT_SIZE: f32 = 16.0;
 
+const COLORS: &[Color] = &[
+    DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN, DARKGRAY
+];
+const COLORS_2: &[Color] = &[
+YELLOW,
+GOLD,
+ORANGE,
+PINK,
+RED,
+MAROON,
+GREEN,
+LIME,
+DARKGREEN,
+SKYBLUE,
+BLUE,
+DARKBLUE,
+PURPLE,
+VIOLET,
+DARKPURPLE,
+BEIGE,
+BROWN,
+DARKBROWN,
+WHITE,
+MAGENTA,
+];
+
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
     let args: Vec<String> = std::env::args().collect();
@@ -51,19 +77,34 @@ async fn main() -> Result<(), AnyError> {
 
         let mouse_position = Vec2::from(mouse_position());
         if available.contains(mouse_position) {
-            let deepest_child = treemap.deepest_child(mouse_position);
+            let nodes_pointed = treemap.overlapping(mouse_position);
+            let deepest_child = nodes_pointed.last().unwrap();
             let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
+            // let previous_end = available.x;
+            for (i, node) in nodes_pointed.iter().enumerate() {
+                let Rect {
+                    x, y, w, h
+                } = round_rect(node.rect.unwrap());
+                draw_rectangle(x, y, w, h, COLORS_2[i % COLORS_2.len()]);
+            }
+            let nodes_count = nodes_pointed.len();
+            for (i_rev, node) in nodes_pointed.iter().rev().enumerate() {
+                let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+                draw_rectangle(
+                    available.x,
+                    available.y + available.h + 5.0 * font_size - 1.0 * font_size,
+                    dimensions.width,
+                    1.5 * font_size,
+                    COLORS_2[(nodes_count - 1 - i_rev) % COLORS_2.len()],
+                );
+            }
             draw_text(
                 &text,
-                available.x + 1.5 * font_size,
+                available.x,
                 available.y + available.h + 5.0 * font_size,
                 font_size,
                 BLACK,
             );
-            let Rect{
-                x, y, w, h
-            } = round_rect(deepest_child.rect.unwrap());
-            draw_rectangle(x, y, w, h, DARKGREEN);
 
         }
 

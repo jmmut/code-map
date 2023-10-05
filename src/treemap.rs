@@ -75,6 +75,16 @@ impl MapNode {
         }
         result
     }
+    pub fn overlapping(&self, point: Vec2) -> Vec<&MapNode> {
+        let mut result = Vec::new();
+        result.push(self);
+        for child in &self.children {
+            if child.rect.unwrap().contains(point) {
+                result.append(&mut child.overlapping(point));
+            }
+        }
+        result
+    }
 }
 
 impl PartialEq for MapNode {
