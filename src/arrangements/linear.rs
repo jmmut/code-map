@@ -32,7 +32,7 @@ pub fn arrange(node: &mut MapNode, rect: Rect, pad: f32) {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::node::Node;
     use macroquad::prelude::Vec2;
@@ -62,7 +62,7 @@ mod tests {
         assert_eq!(map.deepest_child(Vec2::new(0.5, 0.5)), &child_2);
     }
 
-    fn float_eq(a: f32, b: f32) -> bool {
+    pub fn float_eq(a: f32, b: f32) -> bool {
         (a - b).abs() < 0.001
     }
     fn rect_eq(a: Rect, b: Rect) -> bool {

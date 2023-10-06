@@ -12,8 +12,9 @@ mod arrangements {
     pub mod linear;
     pub mod square;
 }
-use crate::cli_args::get_args;
+use crate::cli_args::{Cli, get_args};
 use arrangements::linear;
+use crate::arrangements::square;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -27,8 +28,12 @@ const COLORS: &[Color] = &[
 
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
-    let (folder, padding) = get_args();
-    let tree = bytes_per_file::bytes_per_file(&folder).unwrap();
+    let Cli {
+        input_folder,
+        padding,
+        arrangement,
+    } = get_args();
+    let tree = bytes_per_file::bytes_per_file(&input_folder).unwrap();
     let units = "bytes";
 
     let mut treemap = MapNode::new(tree);
@@ -40,7 +45,11 @@ async fn main() -> Result<(), AnyError> {
         width * 0.9,
         height * 0.75,
     ));
-    linear::arrange(&mut treemap, available, padding);
+    if arrangement == "linear" {
+        linear::arrange(&mut treemap, available, padding);
+    } else {
+        square::arrange(&mut treemap, available);
+    }
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -111,24 +120,26 @@ fn draw_pointed_slice(units: &str, treemap: &mut MapNode, available: Rect, font_
 }
 
 fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
-    let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-    draw_rectangle_lines(x, y, w, h, thickness, color);
-    // draw_text(
-    //     &node.name,
-    //     x + 1.5 * font_size,
-    //     y + 1.5 * font_size,
-    //     font_size,
-    //     BLACK,
-    // );
-    // draw_text(
-    //     &node.size.to_string(),
-    //     x + 1.5 * font_size,
-    //     y + 3.0 * font_size,
-    //     font_size,
-    //     BLACK,
-    // );
-    for child in &node.children {
-        draw_nodes(child, available, font_size, thickness, color);
+    if let Some(rect) = node.rect {
+        let Rect { x, y, w, h } = round_rect(rect);
+        draw_rectangle_lines(x, y, w, h, thickness, color);
+        // draw_text(
+        //     &node.name,
+        //     x + 1.5 * font_size,
+        //     y + 1.5 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        // draw_text(
+        //     &node.size.to_string(),
+        //     x + 1.5 * font_size,
+        //     y + 3.0 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        for child in &node.children {
+            draw_nodes(child, available, font_size, thickness, color);
+        }
     }
 }
 
