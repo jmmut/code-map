@@ -8,6 +8,21 @@ can deploy to itch.io. If the github workflow still fails after this, try upload
 Clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
 
 
+## Arrangements
+
+Different ways of plotting the hierarchical data are available.
+
+### Linear
+
+![linear](./screenshots/linear.png)
+
+This arrangement is quite simple. Given a node with sub-nodes to be plotted in a rectangle, it will plot the sub-nodes along the longest side of the rectangle, sorted by size, biggest first.
+
+Each sub-node will contain their own sub-sub-nodes in the same way.
+
+This arrangement is not great when a node has many children. The children will be plotted as very thin lines.
+
+
 ## Roadmap
 
 - input 

@@ -1,5 +1,5 @@
-use macroquad::prelude::Rect;
 use crate::treemap::MapNode;
+use macroquad::prelude::Rect;
 
 pub fn arrange(node: &mut MapNode, rect: Rect, pad: f32) {
     node.rect = Some(rect);
@@ -31,12 +31,11 @@ pub fn arrange(node: &mut MapNode, rect: Rect, pad: f32) {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use macroquad::prelude::Vec2;
-    use crate::node::Node;
     use super::*;
+    use crate::node::Node;
+    use macroquad::prelude::Vec2;
 
     #[test]
     fn test_contains() {

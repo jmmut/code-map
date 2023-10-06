@@ -1,7 +1,7 @@
 mod bytes_per_file;
+mod cli_args;
 mod node;
 mod treemap;
-mod cli_args;
 
 use crate::treemap::MapNode;
 use macroquad::prelude::*;
@@ -11,12 +11,12 @@ type AnyError = Box<dyn std::error::Error>;
 mod arrangements {
     pub mod linear;
 }
-use arrangements::linear;
 use crate::cli_args::get_args;
+use arrangements::linear;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
-const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
+const DEFAULT_WINDOW_TITLE: &str = "Code Map";
 
 const FONT_SIZE: f32 = 16.0;
 

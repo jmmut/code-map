@@ -1,16 +1,23 @@
+use std::path::PathBuf;
 
+use clap::Parser;
 
-pub fn get_args() -> (String, f32) {
-    let args: Vec<String> = std::env::args().collect();
-    let folder = if args.len() > 1 {
-        args[1].clone()
-    } else {
-        ".".to_string()
-    };
-    let padding = if args.len() > 2 {
-        args[2].parse::<f32>().unwrap()
-    } else {
-        0.0
-    };
+/// Plot hierarchical metrics like file sizes in a folder structure.
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// plot file sizes under this folder.
+    #[arg(default_value = ".")]
+    input_folder: PathBuf,
+
+    /// Padding in pixels between hierarchies (e.g. 4).
+    #[arg(short, long, default_value = "0")]
+    padding: f32,
+}
+
+pub fn get_args() -> (PathBuf, f32) {
+    let args = Cli::parse();
+    let folder = args.input_folder;
+    let padding = args.padding;
     (folder, padding)
 }
