@@ -10,6 +10,7 @@ type AnyError = Box<dyn std::error::Error>;
 
 mod arrangements {
     pub mod linear;
+    pub mod square;
 }
 use crate::cli_args::get_args;
 use arrangements::linear;
