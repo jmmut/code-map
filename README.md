@@ -14,6 +14,7 @@ Clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), t
   - [ ] read counts from a file / stdin / sql dump
 - UI
   - [ ] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
+    - [ ] right click to remove selection
   - [ ] box to search for a file (fuzzy search)
   - [ ] other arrangements that don't draw very thin lines
 - cli/logs

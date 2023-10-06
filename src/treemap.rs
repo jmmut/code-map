@@ -30,13 +30,9 @@ impl MapNode {
         map_node
     }
 
-    pub fn arrange_top_level(&mut self, rect: Rect, pad: f32) {
+    pub fn arrange(&mut self, rect: Rect, pad: f32) {
         self.rect = Some(rect);
-        self.arrange_children(pad);
-    }
-    pub fn arrange_children(&mut self, pad: f32) {
         let mut rect = self.rect.unwrap();
-
         let reduction = pad;
         rect.x += 1.0 * reduction;
         rect.y += 1.0 * reduction;
@@ -50,8 +46,7 @@ impl MapNode {
             let mut previous_end = rect.x;
             for child in &mut self.children {
                 let width = child.size as f32 / self.size as f32 * rect.w;
-                child.rect = Some(Rect::new(previous_end, rect.y, width, rect.h));
-                child.arrange_children(pad);
+                child.arrange(Rect::new(previous_end, rect.y, width, rect.h), pad);
                 previous_end += width;
             }
         } else {
@@ -59,8 +54,7 @@ impl MapNode {
             let mut previous_end = rect.y;
             for child in &mut self.children {
                 let height = child.size as f32 / self.size as f32 * rect.h;
-                child.rect = Some(Rect::new(rect.x, previous_end, rect.w, height));
-                child.arrange_children(pad);
+                child.arrange(Rect::new(rect.x, previous_end, rect.w, height), pad);
                 previous_end += height;
             }
         }
@@ -118,7 +112,7 @@ mod tests {
             rect: Some(Rect::new(0.0, 0.0, 1.0, 1.0)),
             children: vec![child_1.clone(), child_2.clone()],
         };
-        map.arrange_top_level(Rect::new(0.0, 0.0, 1.0, 1.0), 0.0);
+        map.arrange(Rect::new(0.0, 0.0, 1.0, 1.0), 0.0);
         assert_eq!(map.deepest_child(Vec2::new(0.0, 0.0)), &child_1);
         assert_eq!(map.deepest_child(Vec2::new(0.5, 0.5)), &child_2);
     }
@@ -157,7 +151,7 @@ mod tests {
             ],
         ));
         let toplevel_rect = Rect::new(0.0, 0.0, 200.0, 100.0);
-        map.arrange_top_level(toplevel_rect, 0.0);
+        map.arrange(toplevel_rect, 0.0);
         assert_rect_eq(map.rect.unwrap(), toplevel_rect);
         assert_rect_eq(
             map.children[0].rect.unwrap(),

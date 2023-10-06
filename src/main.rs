@@ -32,7 +32,7 @@ async fn main() -> Result<(), AnyError> {
         width * 0.9,
         height * 0.75,
     ));
-    treemap.arrange_top_level(available, padding);
+    treemap.arrange(available, padding);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
