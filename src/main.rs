@@ -3,22 +3,23 @@ mod node;
 mod treemap;
 
 use crate::treemap::MapNode;
+use clap::Parser;
 use macroquad::prelude::*;
 use std::path::PathBuf;
-use clap::Parser;
 
 type AnyError = Box<dyn std::error::Error>;
 
 mod arrangements {
-    pub mod linear;
     pub mod binary;
+    pub mod linear;
 }
 mod metrics {
     pub mod bytes_per_file;
+    pub mod word_mentions;
 }
 
-use arrangements::linear;
 use crate::arrangements::binary;
+use arrangements::linear;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -45,6 +46,10 @@ pub struct Cli {
     /// arrangement algorithm: linear or binary.
     #[arg(short, long, default_value = "binary")]
     pub arrangement: String,
+
+    /// metric to plot: bytes-per-file (or b), mentions-per-word (or w).
+    #[arg(short, long, default_value = "bytes-per-file")]
+    pub metric: String,
 }
 
 #[macroquad::main(window_conf)]
@@ -53,9 +58,22 @@ async fn main() -> Result<(), AnyError> {
         input_folder,
         padding,
         arrangement,
+        metric,
     } = Cli::parse();
-    let tree = metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap();
-    let units = "bytes";
+    let (tree, units) = match metric.as_str() {
+        "bytes-per-file" | "b" => (
+            metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
+            "bytes",
+        ),
+        "mentions-per-word" | "w" => (
+            metrics::word_mentions::word_mentions(&input_folder).unwrap(),
+            "mentions",
+        ),
+        _ => panic!(
+            "Unknown metric: {}. valid ones are: bytes-per-file, b, mentions-per-word, w",
+            metric
+        ),
+    };
 
     let mut treemap = MapNode::new(tree);
     let width = screen_width();
@@ -69,8 +87,13 @@ async fn main() -> Result<(), AnyError> {
     let time_before = std::time::Instant::now();
     if arrangement == "linear" {
         linear::arrange(&mut treemap, available, padding);
-    } else {
+    } else if arrangement == "binary" {
         binary::arrange(&mut treemap, available);
+    } else {
+        panic!(
+            "Unknown arrangement algorithm: {}. valid ones are: linear, binary",
+            arrangement
+        );
     }
     let time_after = std::time::Instant::now();
     println!("arrangement took {:?}", time_after - time_before);
