@@ -31,11 +31,11 @@ This arrangement is not great when a node has many children. The children will b
   - [ ] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
     - [ ] right click to remove selection
   - [ ] box to search for a file (fuzzy search)
-  - [ ] other arrangements that don't draw very thin lines
+  - [/] other arrangements that don't draw very thin lines
 - cli/logs
-  - [ ] -s --arrangement-strategy
+  - [x] -a --arrangement 
   - [ ] -m --metric (file size, line count, code complexity, etc.)
-  - [ ] -a --all-file-extensions
+  - [ ] -x --all-file-extensions
   - [ ] -i --input-file
   - [ ] -o --output-file (dump the hierarchical metrics to a file, as some metrics might be expensive to compute, e.g. code complexity)
   - [ ] aggregate counts of ignored files/extensions

@@ -1,20 +1,24 @@
-mod bytes_per_file;
 mod cli_args;
 mod node;
 mod treemap;
 
 use crate::treemap::MapNode;
 use macroquad::prelude::*;
+use std::path::PathBuf;
+use clap::Parser;
 
 type AnyError = Box<dyn std::error::Error>;
 
 mod arrangements {
     pub mod linear;
-    pub mod square;
+    pub mod binary;
 }
-use crate::cli_args::{Cli, get_args};
+mod metrics {
+    pub mod bytes_per_file;
+}
+
 use arrangements::linear;
-use crate::arrangements::square;
+use crate::arrangements::binary;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -26,14 +30,31 @@ const COLORS: &[Color] = &[
     BEIGE, ORANGE, RED, PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
 ];
 
+/// Plot hierarchical metrics like file sizes in a folder structure.
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub struct Cli {
+    /// plot file sizes under this folder.
+    #[arg(default_value = ".")]
+    pub input_folder: PathBuf,
+
+    /// Padding in pixels between hierarchies (e.g. 4).
+    #[arg(short, long, default_value = "0")]
+    pub padding: f32,
+
+    /// arrangement algorithm: linear or binary.
+    #[arg(short, long, default_value = "binary")]
+    pub arrangement: String,
+}
+
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
     let Cli {
         input_folder,
         padding,
         arrangement,
-    } = get_args();
-    let tree = bytes_per_file::bytes_per_file(&input_folder).unwrap();
+    } = Cli::parse();
+    let tree = metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap();
     let units = "bytes";
 
     let mut treemap = MapNode::new(tree);
@@ -45,11 +66,15 @@ async fn main() -> Result<(), AnyError> {
         width * 0.9,
         height * 0.75,
     ));
+    let time_before = std::time::Instant::now();
     if arrangement == "linear" {
         linear::arrange(&mut treemap, available, padding);
     } else {
-        square::arrange(&mut treemap, available);
+        binary::arrange(&mut treemap, available);
     }
+    let time_after = std::time::Instant::now();
+    println!("arrangement took {:?}", time_after - time_before);
+
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -121,7 +146,7 @@ fn draw_pointed_slice(units: &str, treemap: &mut MapNode, available: Rect, font_
 
 fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
-        let Rect { x, y, w, h } = round_rect(rect);
+        let Rect { x, y, w, h } = trunc_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
         // draw_text(
         //     &node.name,
@@ -150,5 +175,15 @@ fn round_rect(rect: Rect) -> Rect {
         rect.y.round(),
         rect.w.round(),
         rect.h.round(),
+    )
+}
+
+/// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
+fn trunc_rect(rect: Rect) -> Rect {
+    Rect::new(
+        rect.x.trunc(),
+        rect.y.trunc(),
+        rect.w.trunc(),
+        rect.h.trunc(),
     )
 }

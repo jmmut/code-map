@@ -3,7 +3,6 @@ use macroquad::prelude::Rect;
 use crate::treemap::MapNode;
 
 pub fn arrange(node: &mut MapNode, rect: Rect) {
-
     node.rect = Some(rect);
     let rect = node.rect.unwrap();
     if rect.w * rect.h == 0.0 {
@@ -110,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic_square() {
+    fn test_basic_binary() {
         let mut children = Vec::new();
         for i in 1..=10 {
             children.push(Node::new_from_size(format!("child_{}", i), i));
@@ -128,26 +127,26 @@ mod tests {
         let area_linear = area(&tree.children);
 
         arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
-        let squareness_square = average_squareness(
+        let squareness_binary = average_squareness(
             &tree
                 .children
                 .iter()
                 .map(|child| child.rect.unwrap())
                 .collect::<Vec<_>>(),
         );
-        let area_square = area(&tree.children);
+        let area_binary = area(&tree.children);
 
         assert!(
-            squareness_square > squareness_linear,
+            squareness_binary > squareness_linear,
             "{} < {}",
-            squareness_square,
+            squareness_binary,
             squareness_linear
         );
-        println!("squareness of square::arrange: {}", squareness_square);
+        println!("squareness of square::arrange: {}", squareness_binary);
         assert!(
-            float_eq(area_square, area_linear),
+            float_eq(area_binary, area_linear),
             "{} == {}",
-            area_square,
+            area_binary,
             area_linear
         );
     }
