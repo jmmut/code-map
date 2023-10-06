@@ -7,6 +7,11 @@ use macroquad::prelude::*;
 
 type AnyError = Box<dyn std::error::Error>;
 
+mod arrangements {
+    pub mod linear;
+}
+use arrangements::linear;
+
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
 const DEFAULT_WINDOW_TITLE: &str = "Code Tree";
@@ -32,7 +37,7 @@ async fn main() -> Result<(), AnyError> {
         width * 0.9,
         height * 0.75,
     ));
-    treemap.arrange(available, padding);
+    linear::arrange(&mut treemap, available, padding);
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
