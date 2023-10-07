@@ -53,9 +53,13 @@ fn count_word_mentions_in_file(
     if is_text_file(file) {
         let file_str = file.to_string_lossy().to_string();
         let file_content = fs::read_to_string(file)?;
-        for word in file_content.split_whitespace() {
-            let count = mentions.entry(word.to_string()).or_insert(0);
-            *count += 1;
+        for word in file_content.split_terminator(|c :char| {
+            !c.is_alphabetic()
+        }) {
+            if !word.is_empty() {
+                let count = mentions.entry(word.to_string()).or_insert(0);
+                *count += 1;
+            }
         }
     }
     Ok(())
