@@ -157,6 +157,11 @@ async fn main() -> Result<(), AnyError> {
         } else {
             selected = draw_pointed_slice(units, &mut treemap, available, font_size);
         }
+        if is_key_pressed(KeyCode::Backspace) {
+            if let Some(nested_nodes) = &mut selected {
+                nested_nodes.pop();
+            }
+        }
 
         let Rect { x, y, w, h } = round_rect(available);
         draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
