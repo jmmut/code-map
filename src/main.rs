@@ -19,8 +19,8 @@ mod metrics {
 }
 
 use crate::arrangements::binary;
-use arrangements::linear;
 use crate::node::Node;
+use arrangements::linear;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -53,6 +53,14 @@ pub struct Cli {
     pub metric: String,
 }
 
+fn log_time_elapsed<R, F: Fn() -> R>(f: F, name: &str) -> R {
+    let time_before = Instant::now();
+    let result = f();
+    let time_after = Instant::now();
+    info!("{} took {:?}", name, time_after - time_before);
+    result
+}
+
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
     let Cli {
@@ -62,11 +70,10 @@ async fn main() -> Result<(), AnyError> {
         metric,
     } = Cli::parse();
 
-    let time_before = Instant::now();
-    let (tree, units) = compute_metrics(&input_folder, metric);
-    let time_after = Instant::now();
-    info!("computing metrics took {:?}", time_after - time_before);
-
+    let (tree, units) = log_time_elapsed(
+        || compute_metrics(&input_folder, &metric),
+        "computing metrics",
+    );
 
     let time_before = Instant::now();
     let mut treemap = MapNode::new(tree);
@@ -92,7 +99,6 @@ async fn main() -> Result<(), AnyError> {
     let time_after = Instant::now();
     info!("counting took {:?}", time_after - time_before);
 
-
     let font_size = choose_font_size(width, height);
     loop {
         if is_key_pressed(KeyCode::Escape) {
@@ -110,7 +116,6 @@ async fn main() -> Result<(), AnyError> {
     Ok(())
 }
 
-
 fn window_conf() -> Conf {
     Conf {
         window_title: DEFAULT_WINDOW_TITLE.to_owned(),
@@ -121,8 +126,8 @@ fn window_conf() -> Conf {
     }
 }
 
-fn compute_metrics(input_folder: &PathBuf, metric: String) -> (Node, &str) {
-    let (tree, units) = match metric.as_str() {
+fn compute_metrics(input_folder: &PathBuf, metric: &str) -> (Node, &'static str) {
+    let (tree, units) = match metric {
         "bytes-per-file" | "b" => (
             metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
             "bytes",
