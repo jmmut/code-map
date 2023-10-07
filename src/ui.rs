@@ -13,6 +13,19 @@ use crate::ui::searcher::Searcher;
 
 const FONT_SIZE: f32 = 16.0;
 
+const COLORS: &[Color] = &[
+    BEIGE,
+    Color::new(1.0, 0.40, 0.40, 1.00),
+    PINK,
+    PURPLE,
+    VIOLET,
+    BLUE,
+    SKYBLUE,
+    GREEN,
+    LIME,
+    WHITE,
+];
+
 pub struct Ui {
     pub tree: Tree,
     pub units: String,
@@ -56,14 +69,22 @@ impl Ui {
     pub fn draw(&mut self) {
         clear_background(LIGHTGRAY);
 
-        all_draw(
-            &mut self.tree,
+        select_node(&mut &mut self.tree, self.available, &mut &mut self.selected);
+
+        choose_and_draw_nested_nodes(
+            &mut &mut self.tree,
             &self.units,
             self.available,
             self.font_size,
-            &mut self.searcher,
-            &mut self.selected,
+            &mut &mut self.searcher,
+            &mut &mut self.selected,
         );
+
+        let Rect { x, y, w, h } = round_rect(self.available);
+        draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
+        draw_nodes(&&mut self.tree, self.available, self.font_size, 1.0, BLACK);
+
+        self.searcher.draw_search(&mut self.tree);
     }
 }
 
@@ -79,7 +100,7 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-pub fn select_node(tree: &mut Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
+fn select_node(tree: &mut Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
     if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_position = Vec2::from(mouse_position());
         if available.contains(mouse_position) {
@@ -95,7 +116,7 @@ pub fn select_node(tree: &mut Tree, available: Rect, selected: &mut Option<Vec<T
     }
 }
 
-pub fn choose_and_draw_nested_nodes(
+fn choose_and_draw_nested_nodes(
     mut tree: &mut Tree,
     units: &str,
     available: Rect,
@@ -116,30 +137,6 @@ pub fn choose_and_draw_nested_nodes(
             nested_nodes.pop();
         }
     }
-}
-
-fn draw_pointed_slice(
-    units: &str,
-    treemap: &mut Tree,
-    available: Rect,
-    font_size: f32,
-) -> Option<Vec<TreeView>> {
-    let mouse_position = Vec2::from(mouse_position());
-    if available.contains(mouse_position) {
-        let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_nested_nodes(
-            units,
-            available,
-            font_size,
-            &TreeView::from_nodes(&nodes_pointed),
-        );
-        if is_mouse_button_pressed(MouseButton::Left) {
-            let deepest_child = nodes_pointed.last().unwrap();
-            debug!("{:#?}", deepest_child);
-            return Some(TreeView::from_nodes(&nodes_pointed));
-        }
-    }
-    return None;
 }
 
 fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<TreeView>) {
@@ -176,20 +173,43 @@ fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes:
     }
 }
 
-const COLORS: &[Color] = &[
-    BEIGE,
-    Color::new(1.0, 0.40, 0.40, 1.00),
-    PINK,
-    PURPLE,
-    VIOLET,
-    BLUE,
-    SKYBLUE,
-    GREEN,
-    LIME,
-    WHITE,
-];
+fn draw_pointed_slice(
+    units: &str,
+    treemap: &mut Tree,
+    available: Rect,
+    font_size: f32,
+) -> Option<Vec<TreeView>> {
+    let mouse_position = Vec2::from(mouse_position());
+    if available.contains(mouse_position) {
+        let nodes_pointed = treemap.get_nested_by_position(mouse_position);
+        draw_nested_nodes(
+            units,
+            available,
+            font_size,
+            &TreeView::from_nodes(&nodes_pointed),
+        );
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let deepest_child = nodes_pointed.last().unwrap();
+            debug!("{:#?}", deepest_child);
+            return Some(TreeView::from_nodes(&nodes_pointed));
+        }
+    }
+    return None;
+}
 
-pub fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
+/// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
+fn round_rect(rect: Rect) -> Rect {
+    let rounded_x = rect.x.round();
+    let rounded_y = rect.y.round();
+    Rect::new(
+        rounded_x,
+        rect.y.round(),
+        (rect.x + rect.w).round() - rounded_x,
+        (rect.y + rect.h).round() - rounded_y,
+    )
+}
+
+fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
         let Rect { x, y, w, h } = round_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
@@ -211,42 +231,4 @@ pub fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, 
             draw_nodes(child, available, font_size, thickness, color);
         }
     }
-}
-
-/// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
-pub fn round_rect(rect: Rect) -> Rect {
-    let rounded_x = rect.x.round();
-    let rounded_y = rect.y.round();
-    Rect::new(
-        rounded_x,
-        rect.y.round(),
-        (rect.x + rect.w).round() - rounded_x,
-        (rect.y + rect.h).round() - rounded_y,
-    )
-}
-
-pub fn all_draw(
-    mut tree: &mut Tree,
-    units: &str,
-    available: Rect,
-    font_size: f32,
-    mut searcher: &mut Searcher,
-    mut selected: &mut Option<Vec<TreeView>>,
-) {
-    select_node(&mut tree, available, &mut selected);
-
-    choose_and_draw_nested_nodes(
-        &mut tree,
-        units,
-        available,
-        font_size,
-        &mut searcher,
-        &mut selected,
-    );
-
-    let Rect { x, y, w, h } = round_rect(available);
-    draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
-    draw_nodes(&tree, available, font_size, 1.0, BLACK);
-
-    searcher.draw_search(&tree);
 }

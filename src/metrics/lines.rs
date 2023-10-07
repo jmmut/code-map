@@ -49,6 +49,8 @@ fn count_lines_in_file(file: &PathBuf) -> Result<usize, AnyError> {
         let lines = std::io::BufReader::new(file_handle).lines();
         let mut count = 0;
         for _ in lines {
+            // this is so stupid. However, it's not obvious to me that I could write something
+            // faster than this, due to the buffering provided by BufReader
             count += 1;
         }
         Ok(count)
