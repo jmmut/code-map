@@ -4,10 +4,12 @@ use macroquad::prelude::{error, warn};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use crate::metrics::bytes_per_file::has_allowed_extension;
 
-const TEXT_FILE_EXTENSIONS: &[&str] = &[
-    ".c", ".cc", ".cpp", ".cs", ".css", ".go", ".h", ".hpp", ".html", ".java", ".js", ".json",
-    ".jsx", ".md", ".php", ".py", ".rs", ".sh", ".ts", ".tsx", ".txt", ".xml", ".yaml", ".yml",
+pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
+    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json",
+    "jsx", "m", "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml",
+    "yaml", "yml",
 ];
 
 pub fn word_mentions(folder: &PathBuf) -> Result<Node, AnyError> {
@@ -64,11 +66,5 @@ fn count_word_mentions_in_file(
 }
 
 fn is_text_file(file: &PathBuf) -> bool {
-    let file_str = file.to_string_lossy().to_string();
-    for extension in TEXT_FILE_EXTENSIONS {
-        if file_str.ends_with(extension) {
-            return true;
-        }
-    }
-    false
+    has_allowed_extension(file, TEXT_FILE_EXTENSIONS)
 }

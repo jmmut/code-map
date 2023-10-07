@@ -24,6 +24,7 @@ mod metrics {
 use crate::arrangements::binary;
 use crate::node::Node;
 use arrangements::linear;
+use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -63,6 +64,10 @@ pub struct Cli {
     /// metric to plot: bytes-per-file (or b), mentions-per-word (or w).
     #[arg(short, long, default_value = "bytes-per-file")]
     pub metric: String,
+
+    /// Don't filter by extension of source code files
+    #[arg(short = 'x', long)]
+    pub all_extensions: bool,
 }
 
 fn log_time_elapsed<R, F: Fn() -> R>(f: F, name: &str) -> R {
@@ -97,9 +102,10 @@ async fn main() -> Result<(), AnyError> {
         padding,
         arrangement,
         metric,
+        all_extensions,
     } = Cli::parse();
 
-    let (tree, units) = log_time!(compute_metrics(&input_folder, &metric), "computing metrics");
+    let (tree, units) = log_time!(compute_metrics(&input_folder, &metric, all_extensions), "computing metrics");
     let mut treemap = log_time!(MapNode::new(tree), "converting to MapNode");
 
     let width = screen_width();
@@ -185,10 +191,14 @@ fn window_conf() -> Conf {
     }
 }
 
-fn compute_metrics(input_folder: &PathBuf, metric: &str) -> (Node, &'static str) {
+fn compute_metrics(input_folder: &PathBuf, metric: &str, all_extensions: bool) -> (Node, &'static str) {
     let (tree, units) = match metric {
         "bytes-per-file" | "b" => (
-            metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
+            if all_extensions {
+                metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap()
+            } else {
+                metrics::bytes_per_file::bytes_per_file_with_extension(&input_folder, TEXT_FILE_EXTENSIONS).unwrap().unwrap()
+            },
             "bytes",
         ),
         "mentions-per-word" | "w" => (
