@@ -58,28 +58,19 @@ impl MapNode {
 
     /// Returns the count of leaf nodes (e.g. actual files in bytes-per-file) and total nodes (files + folders)
     pub fn count(&self) -> Counts {
-        if self.is_leaf() {
-            Counts { total: 1, leafs: 1 }
-        } else {
-            let mut counts = Counts { total: 1, leafs: 0 };
-            for child in &self.children {
-                let Counts { total, leafs } = child.count();
-                counts.leafs += leafs;
-                counts.total += total;
-            }
-            counts
-        }
+        self.count_if(&|_| true)
     }
 
+    pub fn count_visible(&self) -> Counts {
+        self.count_if(&|node| node.rect.is_some())
+    }
 
-
-    /// Returns the count of leaf nodes (e.g. actual files in bytes-per-file) and total nodes (files + folders)
-    pub fn count_if<F: Fn(&MapNode) -> bool>(&self, predicate: F) -> Counts {
+    pub fn count_if<F: Fn(&MapNode) -> bool>(&self, predicate: &F) -> Counts {
         let count_self = if predicate(self) { 1 } else { 0 };
         if self.is_leaf() {
             Counts {
                 total: count_self,
-                leafs: 1,
+                leafs: count_self,
             }
         } else {
             let mut counts = Counts {
@@ -87,7 +78,7 @@ impl MapNode {
                 leafs: 0,
             };
             for child in &self.children {
-                let Counts { total, leafs } = child.count();
+                let Counts { total, leafs } = child.count_if(predicate);
                 counts.leafs += leafs;
                 counts.total += total;
             }

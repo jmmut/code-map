@@ -5,6 +5,7 @@ use crate::treemap::MapNode;
 use clap::Parser;
 use macroquad::prelude::*;
 use std::path::PathBuf;
+use std::time::Instant;
 
 type AnyError = Box<dyn std::error::Error>;
 
@@ -19,6 +20,7 @@ mod metrics {
 
 use crate::arrangements::binary;
 use arrangements::linear;
+use crate::node::Node;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -60,30 +62,16 @@ async fn main() -> Result<(), AnyError> {
         metric,
     } = Cli::parse();
 
-    let time_before = std::time::Instant::now();
-    let (tree, units) = match metric.as_str() {
-        "bytes-per-file" | "b" => (
-            metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
-            "bytes",
-        ),
-        "mentions-per-word" | "w" => (
-            metrics::word_mentions::word_mentions(&input_folder).unwrap(),
-            "mentions",
-        ),
-        _ => panic!(
-            "Unknown metric: {}. valid ones are: bytes-per-file, b, mentions-per-word, w",
-            metric
-        ),
-    };
-    let time_after = std::time::Instant::now();
+    let time_before = Instant::now();
+    let (tree, units) = compute_metrics(&input_folder, metric);
+    let time_after = Instant::now();
     info!("computing metrics took {:?}", time_after - time_before);
 
+
+    let time_before = Instant::now();
     let mut treemap = MapNode::new(tree);
-    let counts = treemap.count();
-    info!(
-        "There are {} items. {} including the hierarchy levels",
-        counts.leafs, counts.total
-    );
+    let time_after = Instant::now();
+    info!("conversion to MapNode took {:?}", time_after - time_before);
 
     let width = screen_width();
     let height = screen_height();
@@ -93,19 +81,17 @@ async fn main() -> Result<(), AnyError> {
         width * 0.9,
         height * 0.75,
     ));
-    let time_before = std::time::Instant::now();
-    if arrangement == "linear" {
-        linear::arrange(&mut treemap, available, padding);
-    } else if arrangement == "binary" {
-        binary::arrange(&mut treemap, available);
-    } else {
-        panic!(
-            "Unknown arrangement algorithm: {}. valid ones are: linear, binary",
-            arrangement
-        );
-    }
-    let time_after = std::time::Instant::now();
+
+    let time_before = Instant::now();
+    arrange(padding, arrangement, &mut treemap, available);
+    let time_after = Instant::now();
     info!("arrangement took {:?}", time_after - time_before);
+
+    let time_before = Instant::now();
+    log_counts(&treemap);
+    let time_after = Instant::now();
+    info!("counting took {:?}", time_after - time_before);
+
 
     let font_size = choose_font_size(width, height);
     loop {
@@ -124,6 +110,7 @@ async fn main() -> Result<(), AnyError> {
     Ok(())
 }
 
+
 fn window_conf() -> Conf {
     Conf {
         window_title: DEFAULT_WINDOW_TITLE.to_owned(),
@@ -131,6 +118,52 @@ fn window_conf() -> Conf {
         window_height: DEFAULT_WINDOW_HEIGHT,
         high_dpi: true,
         ..Default::default()
+    }
+}
+
+fn compute_metrics(input_folder: &PathBuf, metric: String) -> (Node, &str) {
+    let (tree, units) = match metric.as_str() {
+        "bytes-per-file" | "b" => (
+            metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
+            "bytes",
+        ),
+        "mentions-per-word" | "w" => (
+            metrics::word_mentions::word_mentions(&input_folder).unwrap(),
+            "mentions",
+        ),
+        _ => panic!(
+            "Unknown metric: {}. valid ones are: bytes-per-file, b, mentions-per-word, w",
+            metric
+        ),
+    };
+    (tree, units)
+}
+
+fn arrange(padding: f32, arrangement: String, mut treemap: &mut MapNode, available: Rect) {
+    if arrangement == "linear" {
+        linear::arrange(&mut treemap, available, padding);
+    } else if arrangement == "binary" {
+        binary::arrange(&mut treemap, available);
+    } else {
+        panic!(
+            "Unknown arrangement algorithm: {}. valid ones are: linear, binary",
+            arrangement
+        );
+    }
+}
+
+fn log_counts(treemap: &MapNode) {
+    let counts = treemap.count();
+    info!(
+        "There are {} items. {} including the hierarchy levels",
+        counts.leafs, counts.total
+    );
+    let visible_counts = treemap.count_visible();
+    if visible_counts.total != counts.total || visible_counts.leafs != counts.leafs {
+        info!(
+            "However, only {} items and {} items+hierarchies are visible",
+            visible_counts.leafs, visible_counts.total
+        );
     }
 }
 
