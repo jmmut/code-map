@@ -45,15 +45,34 @@ impl MapNode {
         }
         result
     }
-    pub fn overlapping(&self, point: Vec2) -> Vec<&MapNode> {
+    pub fn get_nested_by_position(&self, point: Vec2) -> Vec<&MapNode> {
         let mut result = Vec::new();
         result.push(self);
         for child in &self.children {
             if child.rect.unwrap().contains(point) {
-                result.append(&mut child.overlapping(point));
+                result.append(&mut child.get_nested_by_position(point));
             }
         }
         result
+    }
+
+    pub fn get_nested_by_name(&self, name: &str) -> Vec<&MapNode> {
+        self.get_nested_by_name_recursive(name).1
+    }
+    fn get_nested_by_name_recursive(&self, name: &str) -> (bool, Vec<&MapNode>) {
+        if self.name == name {
+            (true, vec![self])
+        } else {
+            for child in &self.children {
+                let (found, mut subnodes) = child.get_nested_by_name_recursive(name);
+                if found {
+                    let mut nodes = vec![self];
+                    nodes.append(&mut subnodes);
+                    return (true, nodes);
+                }
+            }
+            (false, vec![])
+        }
     }
 
     /// Returns the count of leaf nodes (e.g. actual files in bytes-per-file) and total nodes (files + folders)
@@ -96,7 +115,7 @@ impl MapNode {
         self.search_recursive(&lowercase, limit, &mut result);
         result
     }
-    fn search_recursive(&self, search_word:  &str, limit: usize, result: &mut Vec<String>) {
+    fn search_recursive(&self, search_word: &str, limit: usize, result: &mut Vec<String>) {
         if result.len() < limit {
             if self.name.to_lowercase().contains(search_word) {
                 result.push(self.name.clone());

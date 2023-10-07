@@ -112,7 +112,7 @@ async fn main() -> Result<(), AnyError> {
     let mut searcher = Searcher::new(
         Rect::new(
             available.x,
-            available.y + available.h + font_size * 2.0,
+            available.y + available.h + font_size * 3.0,
             available.w,
             font_size * 1.5,
         ),
@@ -124,13 +124,19 @@ async fn main() -> Result<(), AnyError> {
         }
         clear_background(LIGHTGRAY);
 
-        draw_pointed_slice(units, &mut treemap, available, font_size);
+        if let Some(search) = searcher.get_result() {
+            let nested_nodes = treemap.get_nested_by_name(&search);
+            draw_nested_nodes(units, available, font_size, &nested_nodes);
+        } else {
+            draw_pointed_slice(units, &mut treemap, available, font_size);
+        }
+
         let Rect { x, y, w, h } = round_rect(available);
         draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
         draw_nodes(&treemap, available, font_size, 1.0, BLACK);
-        if let Some(search_word) = searcher.draw_search() {
-            info!("{:?}", treemap.search(&search_word, 20));
-        }
+
+        searcher.draw_search(&treemap);
+
         next_frame().await
     }
     // println!("{:#?}", treemap);
@@ -208,37 +214,42 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
 fn draw_pointed_slice(units: &str, treemap: &mut MapNode, available: Rect, font_size: f32) {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
-        let nodes_pointed = treemap.overlapping(mouse_position);
-        let deepest_child = nodes_pointed.last().unwrap();
-        let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
-        // let previous_end = available.x;
-        for (i, node) in nodes_pointed.iter().enumerate() {
-            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-            // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
-            draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
-        }
-        let nodes_count = nodes_pointed.len();
-        for (i_rev, node) in nodes_pointed.iter().rev().enumerate() {
-            let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
-            draw_rectangle(
-                available.x,
-                2.0 * available.y + available.h,
-                dimensions.width,
-                1.5 * font_size,
-                COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
-            );
-        }
-        draw_text(
-            &text,
-            available.x,
-            2.0 * available.y + available.h + 1.0 * font_size,
-            font_size,
-            BLACK,
-        );
+        let nodes_pointed = treemap.get_nested_by_position(mouse_position);
+        draw_nested_nodes(units, available, font_size, &nodes_pointed);
         if is_mouse_button_pressed(MouseButton::Left) {
+            let deepest_child = nodes_pointed.last().unwrap();
             debug!("{:#?}", deepest_child)
         }
     }
+}
+
+fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<&MapNode>) {
+    let deepest_child = nested_nodes.last().unwrap();
+    let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
+    // let previous_end = available.x;
+    for (i, node) in nested_nodes.iter().enumerate() {
+        let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
+        // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
+        draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+    }
+    let nodes_count = nested_nodes.len();
+    for (i_rev, node) in nested_nodes.iter().rev().enumerate() {
+        let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+        draw_rectangle(
+            available.x,
+            2.0 * available.y + available.h,
+            dimensions.width,
+            1.5 * font_size,
+            COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
+        );
+    }
+    draw_text(
+        &text,
+        available.x,
+        2.0 * available.y + available.h + 1.0 * font_size,
+        font_size,
+        BLACK,
+    );
 }
 
 fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
@@ -288,11 +299,13 @@ fn trunc_rect(rect: Rect) -> Rect {
 }
 
 pub struct Searcher {
+    ui_id: u64,
     tag: String,
     tag_pos: Vec2,
     font_size: f32,
     rect: Rect,
     search_word: String,
+    result: Option<String>,
 }
 impl Searcher {
     pub fn new(mut rect: Rect, font_size: f32) -> Self {
@@ -303,14 +316,16 @@ impl Searcher {
         rect.w -= text_dimensions.width;
         rect.y -= font_size;
         Self {
+            ui_id: hash!(rect.x as u64, rect.y as u64, rect.w as u64, rect.h as u64),
             tag,
             tag_pos,
             font_size,
             rect,
             search_word: "".to_string(),
+            result: None,
         }
     }
-    fn draw_search(&mut self) -> Option<String> {
+    fn draw_search_box(&mut self) -> Option<String> {
         let input_id = hash!();
         draw_text(
             &self.tag,
@@ -319,12 +334,12 @@ impl Searcher {
             self.font_size,
             BLACK,
         );
+
         InputText::new(input_id)
             .position(self.rect.point())
             .size(self.rect.size())
             .ui(&mut root_ui(), &mut self.search_word);
         if is_key_pressed(KeyCode::F) {
-            info!("focusing input");
             root_ui().set_input_focus(input_id)
         }
         if self.search_word.is_empty() {
@@ -332,5 +347,40 @@ impl Searcher {
         } else {
             Some(self.search_word.clone())
         }
+    }
+    fn draw_search(&mut self, treemap: &MapNode) {
+        if let Some(search_word) = self.draw_search_box() {
+            let results = treemap.search(&search_word, 20);
+            if results.len() > 0 {
+                let longest = results.iter().max_by_key(|w| w.len()).unwrap();
+                let dimensions = measure_text(longest, None, self.font_size as u16, 1.0);
+                let line_height = 1.2 * self.font_size;
+                let horizontal_pad = 0.4 * line_height;
+                let w = dimensions.width + 2.0 * horizontal_pad;
+                let h = (results.len() as f32 + 0.5) * line_height;
+                let space = 0.0 * line_height;
+                draw_rectangle(self.rect.x, self.rect.y - h - space, w, h, LIGHTGRAY);
+                draw_rectangle_lines(self.rect.x, self.rect.y - h - space, w, h, 2.0, BLACK);
+                for (i, result) in results.iter().enumerate() {
+                    draw_text(
+                        result,
+                        self.rect.x + horizontal_pad,
+                        self.rect.y - h - space + (i as f32 + 1.0) * line_height,
+                        self.font_size,
+                        BLACK,
+                    );
+                }
+                self.result = results.first().cloned();
+            } else {
+                self.result = None
+            }
+        } else {
+            self.result = None;
+        }
+    }
+    fn get_result(&self) -> Option<String> {
+        // if root_ui().is_focused(self.ui_id) {
+            self.result.clone()
+        // }
     }
 }
