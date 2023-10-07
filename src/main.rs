@@ -1,7 +1,7 @@
 mod node;
 mod treemap;
 
-use crate::treemap::MapNode;
+use crate::treemap::{MapNode, MapNodeView};
 use clap::Parser;
 use macroquad::hash;
 use macroquad::prelude::*;
@@ -120,6 +120,7 @@ async fn main() -> Result<(), AnyError> {
         ),
         font_size,
     );
+    let mut selected = None;
     loop {
         if is_key_pressed(KeyCode::Q)
             && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
@@ -130,9 +131,11 @@ async fn main() -> Result<(), AnyError> {
 
         if let Some(search) = searcher.get_result() {
             let nested_nodes = treemap.get_nested_by_name(&search);
-            draw_nested_nodes(units, available, font_size, &nested_nodes);
-        } else {
-            draw_pointed_slice(units, &mut treemap, available, font_size);
+            draw_nested_nodes(units, available, font_size, &MapNodeView::from_nodes(&nested_nodes));
+        } else if let Some(selected_nodes) = &selected {
+            draw_nested_nodes(units, available, font_size, &selected_nodes);
+        }  else {
+            selected = draw_pointed_slice(units, &mut treemap, available, font_size);
         }
 
         let Rect { x, y, w, h } = round_rect(available);
@@ -215,28 +218,34 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn draw_pointed_slice(units: &str, treemap: &mut MapNode, available: Rect, font_size: f32) {
+fn draw_pointed_slice<'a>(units: &str, treemap: &'a mut MapNode, available: Rect, font_size: f32) -> Option<Vec<MapNodeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_nested_nodes(units, available, font_size, &nodes_pointed);
+        draw_nested_nodes(units, available, font_size, &MapNodeView::from_nodes(&nodes_pointed));
         if is_mouse_button_pressed(MouseButton::Left) {
             let deepest_child = nodes_pointed.last().unwrap();
-            debug!("{:#?}", deepest_child)
+            debug!("{:#?}", deepest_child);
+            return Some(MapNodeView::from_nodes(&nodes_pointed));
         }
     }
+    return None;
 }
 
-fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<&MapNode>) {
+fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<MapNodeView>) {
     let deepest_child = nested_nodes.last().unwrap();
     let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
     // let previous_end = available.x;
+
+    // draw the color blocks in the nodes rect
     for (i, node) in nested_nodes.iter().enumerate() {
         let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
         // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
         draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
     }
     let nodes_count = nested_nodes.len();
+
+    // draw color background over the node name at the bottom
     for (i_rev, node) in nested_nodes.iter().rev().enumerate() {
         let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
         draw_rectangle(

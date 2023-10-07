@@ -9,6 +9,13 @@ pub struct MapNode {
     pub children: Vec<MapNode>,
 }
 
+pub struct MapNodeView {
+    pub name: String,
+    pub size: i64,
+    pub rect: Option<Rect>,
+    pub children_count: usize,
+}
+
 pub struct Counts {
     pub total: usize,
     pub leafs: usize,
@@ -130,5 +137,19 @@ impl MapNode {
 impl PartialEq for MapNode {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name && self.size == other.size
+    }
+}
+
+impl MapNodeView {
+    pub fn from_node(node: &MapNode) -> Self {
+        Self {
+            name: node.name.clone(),
+            size: node.size,
+            rect: node.rect.clone(),
+            children_count: node.children.len(),
+        }
+    }
+    pub fn from_nodes(nodes: &[&MapNode]) -> Vec<Self> {
+        nodes.iter().map(|n|Self::from_node(n)).collect()
     }
 }
