@@ -33,8 +33,15 @@ const FONT_SIZE: f32 = 16.0;
 
 const COLORS: &[Color] = &[
     BEIGE,
-Color::new(1.0, 0.40, 0.40, 1.00),
-    PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
+    Color::new(1.0, 0.40, 0.40, 1.00),
+    PINK,
+    PURPLE,
+    VIOLET,
+    BLUE,
+    SKYBLUE,
+    GREEN,
+    LIME,
+    WHITE,
 ];
 
 /// Plot hierarchical metrics like file sizes in a folder structure.
@@ -122,19 +129,32 @@ async fn main() -> Result<(), AnyError> {
     );
     let mut selected = None;
     loop {
-        if is_key_pressed(KeyCode::Q)
-            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
+        if (is_key_pressed(KeyCode::Q)
+            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl)))
+            || is_key_down(KeyCode::Escape)
         {
             break;
         }
         clear_background(LIGHTGRAY);
 
-        if let Some(search) = searcher.get_result() {
-            let nested_nodes = treemap.get_nested_by_name(&search);
-            draw_nested_nodes(units, available, font_size, &MapNodeView::from_nodes(&nested_nodes));
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let mouse_position = Vec2::from(mouse_position());
+            if available.contains(mouse_position) {
+                let nodes_pointed = treemap.get_nested_by_position(mouse_position);
+                selected = Some(MapNodeView::from_nodes(&nodes_pointed));
+            } else {
+                selected = None;
+            }
+        }
+        if is_mouse_button_pressed(MouseButton::Right) {
+            selected = None;
+        }
+        if let Some(nested_nodes) = searcher.get_result() {
+            selected = Some(nested_nodes.clone());
+            draw_nested_nodes(units, available, font_size, &nested_nodes);
         } else if let Some(selected_nodes) = &selected {
             draw_nested_nodes(units, available, font_size, &selected_nodes);
-        }  else {
+        } else {
             selected = draw_pointed_slice(units, &mut treemap, available, font_size);
         }
 
@@ -218,11 +238,21 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn draw_pointed_slice<'a>(units: &str, treemap: &'a mut MapNode, available: Rect, font_size: f32) -> Option<Vec<MapNodeView>> {
+fn draw_pointed_slice<'a>(
+    units: &str,
+    treemap: &'a mut MapNode,
+    available: Rect,
+    font_size: f32,
+) -> Option<Vec<MapNodeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_nested_nodes(units, available, font_size, &MapNodeView::from_nodes(&nodes_pointed));
+        draw_nested_nodes(
+            units,
+            available,
+            font_size,
+            &MapNodeView::from_nodes(&nodes_pointed),
+        );
         if is_mouse_button_pressed(MouseButton::Left) {
             let deepest_child = nodes_pointed.last().unwrap();
             debug!("{:#?}", deepest_child);
@@ -232,7 +262,12 @@ fn draw_pointed_slice<'a>(units: &str, treemap: &'a mut MapNode, available: Rect
     return None;
 }
 
-fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<MapNodeView>) {
+fn draw_nested_nodes(
+    units: &str,
+    available: Rect,
+    font_size: f32,
+    nested_nodes: &Vec<MapNodeView>,
+) {
     let deepest_child = nested_nodes.last().unwrap();
     let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
     // let previous_end = available.x;
@@ -319,8 +354,9 @@ pub struct Searcher {
     rect: Rect,
     search_word: String,
     focused: bool,
-    results: Vec<String>,
     result: Option<String>,
+    results: Vec<String>,
+    nested_results: Option<Vec<MapNodeView>>,
 }
 impl Searcher {
     pub fn new(mut rect: Rect, font_size: f32) -> Self {
@@ -340,6 +376,7 @@ impl Searcher {
             results: Vec::new(),
             focused: false,
             result: None,
+            nested_results: None,
         }
     }
     fn draw_search_box(&mut self) -> Option<String> {
@@ -358,7 +395,7 @@ impl Searcher {
 
         if is_key_pressed(KeyCode::F) {
             self.set_focus(true);
-        } else if is_key_pressed(KeyCode::Escape) {
+        } else if is_key_pressed(KeyCode::Enter) {
             self.set_focus(false);
         } else if is_mouse_button_pressed(MouseButton::Left) {
             self.set_focus(self.rect.contains(Vec2::from(mouse_position())));
@@ -385,6 +422,10 @@ impl Searcher {
         if let Some(search_word) = self.draw_search_box() {
             if previous_search != search_word {
                 self.results = treemap.search(&search_word, 20);
+                if let Some(first) = self.results.first() {
+                    self.nested_results =
+                        Some(MapNodeView::from_nodes(&treemap.get_nested_by_name(first)));
+                }
             }
             let results = &self.results;
             let line_height = 1.2 * self.font_size;
@@ -397,7 +438,14 @@ impl Searcher {
                 let space = 0.0 * line_height;
                 draw_rectangle(self.rect.x, self.rect.y - h - space, w, h, LIGHTGRAY);
                 draw_rectangle_lines(self.rect.x, self.rect.y - h - space, w, h, 2.0, BLACK);
-                draw_rectangle_lines(self.rect.x+horizontal_pad *0.5, self.rect.y+horizontal_pad *0.5 - h - space, w - horizontal_pad, line_height, 2.0, GRAY);
+                draw_rectangle_lines(
+                    self.rect.x + horizontal_pad * 0.5,
+                    self.rect.y + horizontal_pad * 0.5 - h - space,
+                    w - horizontal_pad,
+                    line_height,
+                    2.0,
+                    GRAY,
+                );
                 for (i, result) in results.iter().enumerate() {
                     draw_text(
                         result,
@@ -423,9 +471,11 @@ impl Searcher {
             self.result = None;
         }
     }
-    fn get_result(&self) -> Option<String> {
-        // if root_ui().is_focused(self.ui_id) {
-        self.result.clone()
-        // }
+    fn get_result(&self) -> Option<&Vec<MapNodeView>> {
+        if self.focused {
+            self.nested_results.as_ref()
+        } else {
+            None
+        }
     }
 }

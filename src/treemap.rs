@@ -9,6 +9,7 @@ pub struct MapNode {
     pub children: Vec<MapNode>,
 }
 
+#[derive(Clone)]
 pub struct MapNodeView {
     pub name: String,
     pub size: i64,
@@ -150,6 +151,6 @@ impl MapNodeView {
         }
     }
     pub fn from_nodes(nodes: &[&MapNode]) -> Vec<Self> {
-        nodes.iter().map(|n|Self::from_node(n)).collect()
+        nodes.iter().map(|n| Self::from_node(n)).collect()
     }
 }
