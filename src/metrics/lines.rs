@@ -1,6 +1,6 @@
 use crate::metrics::bytes_per_file::has_allowed_extension;
 use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
-use crate::node::Node;
+use crate::tree::Tree;
 use crate::AnyError;
 use macroquad::prelude::{error, warn};
 use std::fs;
@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 
-pub fn lines_per_file(folder: &PathBuf) -> Result<Option<Node>, AnyError> {
+pub fn lines_per_file(folder: &PathBuf) -> Result<Option<Tree>, AnyError> {
     let path = Path::new(folder);
     let path_str = folder.to_string_lossy().to_string();
     if path.is_symlink() {
@@ -16,7 +16,7 @@ pub fn lines_per_file(folder: &PathBuf) -> Result<Option<Node>, AnyError> {
         Ok(None)
     } else if Path::new(folder).is_file() {
         if has_allowed_extension(folder, TEXT_FILE_EXTENSIONS) {
-            Ok(Some(Node::new_from_size(
+            Ok(Some(Tree::new_from_size(
                 path_str,
                 count_lines_in_file(folder)? as i64,
             )))
@@ -31,7 +31,7 @@ pub fn lines_per_file(folder: &PathBuf) -> Result<Option<Node>, AnyError> {
                 nodes.push(node);
             }
         }
-        let mut parent = Node::new_from_children(path_str, nodes);
+        let mut parent = Tree::new_from_children(path_str, nodes);
         parent.get_or_compute_size();
         Ok(Some(parent))
     } else {

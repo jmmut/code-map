@@ -1,17 +1,17 @@
-use crate::node::Node;
+use crate::tree::Tree;
 use crate::AnyError;
 use macroquad::prelude::{error, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub fn bytes_per_file(folder: &PathBuf) -> Result<Node, AnyError> {
+pub fn bytes_per_file(folder: &PathBuf) -> Result<Tree, AnyError> {
     let path = Path::new(folder);
     let path_str = folder.to_string_lossy().to_string();
     if path.is_symlink() {
         warn!("{} is a symlink and will be ignored", path_str);
-        Ok(Node::new_from_size(path_str, 0))
+        Ok(Tree::new_from_size(path_str, 0))
     } else if Path::new(folder).is_file() {
-        Ok(Node::new_from_size(
+        Ok(Tree::new_from_size(
             path_str,
             fs::metadata(folder)?.len() as i64,
         ))
@@ -20,7 +20,7 @@ pub fn bytes_per_file(folder: &PathBuf) -> Result<Node, AnyError> {
         for entry in fs::read_dir(folder)? {
             nodes.push(bytes_per_file(&entry?.path())?);
         }
-        let mut parent = Node::new_from_children(path_str, nodes);
+        let mut parent = Tree::new_from_children(path_str, nodes);
         parent.get_or_compute_size();
         Ok(parent)
     } else {
@@ -28,14 +28,14 @@ pub fn bytes_per_file(folder: &PathBuf) -> Result<Node, AnyError> {
             "{} is not a file nor a directory nor a symlink. Ignoring...",
             path_str
         );
-        Ok(Node::new_from_size(path_str, 0))
+        Ok(Tree::new_from_size(path_str, 0))
     }
 }
 
 pub fn bytes_per_file_with_extension(
     folder: &PathBuf,
     extensions: &[&str],
-) -> Result<Option<Node>, AnyError> {
+) -> Result<Option<Tree>, AnyError> {
     let path = Path::new(folder);
     let path_str = folder.to_string_lossy().to_string();
     if path.is_symlink() {
@@ -43,7 +43,7 @@ pub fn bytes_per_file_with_extension(
         Ok(None)
     } else if Path::new(folder).is_file() {
         if has_allowed_extension(folder, extensions) {
-            Ok(Some(Node::new_from_size(
+            Ok(Some(Tree::new_from_size(
                 path_str,
                 fs::metadata(folder)?.len() as i64,
             )))
@@ -58,7 +58,7 @@ pub fn bytes_per_file_with_extension(
                 nodes.push(node);
             }
         }
-        let mut parent = Node::new_from_children(path_str, nodes);
+        let mut parent = Tree::new_from_children(path_str, nodes);
         parent.get_or_compute_size();
         Ok(Some(parent))
     } else {

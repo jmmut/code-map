@@ -1,7 +1,6 @@
-mod node;
-mod treemap;
+mod tree;
 
-use crate::treemap::{MapNode, MapNodeView};
+use crate::tree::{Tree, TreeView};
 use clap::Parser;
 use macroquad::hash;
 use macroquad::prelude::*;
@@ -24,7 +23,6 @@ mod metrics {
 
 use crate::arrangements::binary;
 use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
-use crate::node::Node;
 use arrangements::linear;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
@@ -63,7 +61,7 @@ pub struct Cli {
     pub arrangement: String,
 
     /// metric to plot: bytes-per-file (or b), mentions-per-word (or w), lines-per-file (or l).
-    #[arg(short, long, default_value = "bytes-per-file")]
+    #[arg(short, long, default_value = "lines-per-file")]
     pub metric: String,
 
     /// Don't filter by extension of source code files
@@ -98,11 +96,10 @@ async fn main() -> Result<(), AnyError> {
         all_extensions,
     } = Cli::parse();
 
-    let (tree, units) = log_time!(
+    let (mut tree, units) = log_time!(
         compute_metrics(&input_folder, &metric, all_extensions),
         "computing metrics"
     );
-    let mut treemap = log_time!(MapNode::new(tree), "converting to MapNode");
 
     let width = screen_width();
     let height = screen_height();
@@ -114,10 +111,10 @@ async fn main() -> Result<(), AnyError> {
     ));
 
     log_time!(
-        arrange(padding, arrangement, &mut treemap, available),
+        arrange(padding, arrangement, &mut tree, available),
         "arrangement"
     );
-    log_time!(log_counts(&treemap));
+    log_time!(log_counts(&tree));
 
     let font_size = choose_font_size(width, height);
     let mut searcher = Searcher::new(
@@ -142,8 +139,8 @@ async fn main() -> Result<(), AnyError> {
         if is_mouse_button_pressed(MouseButton::Left) {
             let mouse_position = Vec2::from(mouse_position());
             if available.contains(mouse_position) {
-                let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-                selected = Some(MapNodeView::from_nodes(&nodes_pointed));
+                let nodes_pointed = tree.get_nested_by_position(mouse_position);
+                selected = Some(TreeView::from_nodes(&nodes_pointed));
             } else {
                 selected = None;
             }
@@ -157,7 +154,7 @@ async fn main() -> Result<(), AnyError> {
         } else if let Some(selected_nodes) = &selected {
             draw_nested_nodes(units, available, font_size, &selected_nodes);
         } else {
-            selected = draw_pointed_slice(units, &mut treemap, available, font_size);
+            selected = draw_pointed_slice(units, &mut tree, available, font_size);
         }
         if is_key_pressed(KeyCode::Backspace) {
             if let Some(nested_nodes) = &mut selected {
@@ -167,9 +164,9 @@ async fn main() -> Result<(), AnyError> {
 
         let Rect { x, y, w, h } = round_rect(available);
         draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
-        draw_nodes(&treemap, available, font_size, 1.0, BLACK);
+        draw_nodes(&tree, available, font_size, 1.0, BLACK);
 
-        searcher.draw_search(&treemap);
+        searcher.draw_search(&tree);
 
         next_frame().await
     }
@@ -191,7 +188,7 @@ fn compute_metrics(
     input_folder: &PathBuf,
     metric: &str,
     all_extensions: bool,
-) -> (Node, &'static str) {
+) -> (Tree, &'static str) {
     let (tree, units) = match metric {
         "bytes-per-file" | "b" => (
             if all_extensions {
@@ -224,7 +221,7 @@ fn compute_metrics(
     (tree, units)
 }
 
-fn arrange(padding: f32, arrangement: String, mut treemap: &mut MapNode, available: Rect) {
+fn arrange(padding: f32, arrangement: String, mut treemap: &mut Tree, available: Rect) {
     if arrangement == "linear" {
         linear::arrange(&mut treemap, available, padding);
     } else if arrangement == "binary" {
@@ -237,7 +234,7 @@ fn arrange(padding: f32, arrangement: String, mut treemap: &mut MapNode, availab
     }
 }
 
-fn log_counts(treemap: &MapNode) {
+fn log_counts(treemap: &Tree) {
     let counts = treemap.count();
     info!(
         "There are {} items. {} including the hierarchy levels",
@@ -264,12 +261,12 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn draw_pointed_slice<'a>(
+fn draw_pointed_slice(
     units: &str,
-    treemap: &'a mut MapNode,
+    treemap: &mut Tree,
     available: Rect,
     font_size: f32,
-) -> Option<Vec<MapNodeView>> {
+) -> Option<Vec<TreeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
@@ -277,23 +274,18 @@ fn draw_pointed_slice<'a>(
             units,
             available,
             font_size,
-            &MapNodeView::from_nodes(&nodes_pointed),
+            &TreeView::from_nodes(&nodes_pointed),
         );
         if is_mouse_button_pressed(MouseButton::Left) {
             let deepest_child = nodes_pointed.last().unwrap();
             debug!("{:#?}", deepest_child);
-            return Some(MapNodeView::from_nodes(&nodes_pointed));
+            return Some(TreeView::from_nodes(&nodes_pointed));
         }
     }
     return None;
 }
 
-fn draw_nested_nodes(
-    units: &str,
-    available: Rect,
-    font_size: f32,
-    nested_nodes: &Vec<MapNodeView>,
-) {
+fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<TreeView>) {
     if nested_nodes.len() > 0 {
         let deepest_child = nested_nodes.last().unwrap();
         let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
@@ -327,7 +319,7 @@ fn draw_nested_nodes(
     }
 }
 
-fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
+fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
         let Rect { x, y, w, h } = round_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
@@ -373,7 +365,7 @@ pub struct Searcher {
     focused: bool,
     result: Option<String>,
     results: Vec<String>,
-    nested_results: Option<Vec<MapNodeView>>,
+    nested_results: Option<Vec<TreeView>>,
 }
 impl Searcher {
     pub fn new(mut rect: Rect, font_size: f32) -> Self {
@@ -434,7 +426,7 @@ impl Searcher {
         }
     }
 
-    fn draw_search(&mut self, treemap: &MapNode) {
+    fn draw_search(&mut self, treemap: &Tree) {
         let previous_search = self.search_word.clone();
         if let Some(search_word) = self.draw_search_box() {
             if previous_search != search_word {
@@ -442,7 +434,7 @@ impl Searcher {
                 self.results.sort_by(|a, b| a.len().cmp(&b.len()));
                 if let Some(first) = self.results.first() {
                     self.nested_results =
-                        Some(MapNodeView::from_nodes(&treemap.get_nested_by_name(first)));
+                        Some(TreeView::from_nodes(&treemap.get_nested_by_name(first)));
                 }
             }
             let results = &self.results;
@@ -489,7 +481,7 @@ impl Searcher {
             self.result = None;
         }
     }
-    fn get_result(&self) -> Option<&Vec<MapNodeView>> {
+    fn get_result(&self) -> Option<&Vec<TreeView>> {
         if self.focused {
             self.nested_results.as_ref()
         } else {

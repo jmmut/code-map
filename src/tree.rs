@@ -1,16 +1,15 @@
-use crate::node::Node;
 use macroquad::prelude::{Rect, Vec2};
 
 #[derive(Debug, Clone)]
-pub struct MapNode {
+pub struct Tree {
     pub name: String,
-    pub size: i64,
+    pub size: Option<i64>,
     pub rect: Option<Rect>,
-    pub children: Vec<MapNode>,
+    pub children: Vec<Tree>,
 }
 
 #[derive(Clone)]
-pub struct MapNodeView {
+pub struct TreeView {
     pub name: String,
     pub size: i64,
     pub rect: Option<Rect>,
@@ -22,29 +21,41 @@ pub struct Counts {
     pub leafs: usize,
 }
 
-impl MapNode {
-    pub fn new(raw_tree: Node) -> Self {
-        let Node {
+impl Tree {
+    pub fn new_from_size(name: String, size: i64) -> Tree {
+        Tree {
             name,
-            size,
-            children,
-        } = raw_tree;
-
-        let mut map_node = MapNode {
-            name,
-            size: size.unwrap(),
+            size: Some(size),
             rect: None,
             children: Vec::new(),
-        };
-
-        for child in children {
-            map_node.children.push(MapNode::new(child));
         }
-        map_node
+    }
+    pub fn new_from_children(name: String, children: Vec<Tree>) -> Tree {
+        let mut node = Tree {
+            name,
+            size: None,
+            rect: None,
+            children,
+        };
+        node.get_or_compute_size();
+        node
+    }
+
+    pub fn get_or_compute_size(&mut self) -> i64 {
+        if let Some(size) = self.size {
+            size
+        } else {
+            let mut size = 0;
+            for child in &mut self.children {
+                size += child.get_or_compute_size();
+            }
+            self.size = Some(size);
+            size
+        }
     }
 
     #[allow(unused)]
-    pub fn deepest_child(&self, point: Vec2) -> &MapNode {
+    pub fn deepest_child(&self, point: Vec2) -> &Tree {
         let mut result = self;
         for child in &self.children {
             if child.rect.unwrap().contains(point) {
@@ -53,7 +64,7 @@ impl MapNode {
         }
         result
     }
-    pub fn get_nested_by_position(&self, point: Vec2) -> Vec<&MapNode> {
+    pub fn get_nested_by_position(&self, point: Vec2) -> Vec<&Tree> {
         let mut result = Vec::new();
         result.push(self);
         for child in &self.children {
@@ -64,10 +75,10 @@ impl MapNode {
         result
     }
 
-    pub fn get_nested_by_name(&self, name: &str) -> Vec<&MapNode> {
+    pub fn get_nested_by_name(&self, name: &str) -> Vec<&Tree> {
         self.get_nested_by_name_recursive(name).1
     }
-    fn get_nested_by_name_recursive(&self, name: &str) -> (bool, Vec<&MapNode>) {
+    fn get_nested_by_name_recursive(&self, name: &str) -> (bool, Vec<&Tree>) {
         if self.name == name {
             (true, vec![self])
         } else {
@@ -92,7 +103,7 @@ impl MapNode {
         self.count_if(&|node| node.rect.is_some())
     }
 
-    pub fn count_if<F: Fn(&MapNode) -> bool>(&self, predicate: &F) -> Counts {
+    pub fn count_if<F: Fn(&Tree) -> bool>(&self, predicate: &F) -> Counts {
         let count_self = if predicate(self) { 1 } else { 0 };
         if self.is_leaf() {
             Counts {
@@ -133,24 +144,46 @@ impl MapNode {
             }
         }
     }
+    pub fn size(&self) -> i64 {
+        self.size.unwrap()
+    }
 }
 
-impl PartialEq for MapNode {
+impl PartialEq for Tree {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name && self.size == other.size
     }
 }
 
-impl MapNodeView {
-    pub fn from_node(node: &MapNode) -> Self {
+impl TreeView {
+    pub fn from_node(node: &Tree) -> Self {
         Self {
             name: node.name.clone(),
-            size: node.size,
+            size: node.size.unwrap(),
             rect: node.rect.clone(),
             children_count: node.children.len(),
         }
     }
-    pub fn from_nodes(nodes: &[&MapNode]) -> Vec<Self> {
+    pub fn from_nodes(nodes: &[&Tree]) -> Vec<Self> {
         nodes.iter().map(|n| Self::from_node(n)).collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_size_computation() {
+        let mut tree = Tree::new_from_children(
+            "root".to_string(),
+            vec![
+                Tree::new_from_size("child1".to_string(), 5),
+                Tree::new_from_size("child2".to_string(), 7),
+            ],
+        );
+
+        assert_eq!(tree.get_or_compute_size(), 12);
+        assert_eq!(tree.size, Some(12));
     }
 }

@@ -1,19 +1,19 @@
 use macroquad::prelude::Rect;
 
-use crate::treemap::MapNode;
+use crate::tree::Tree;
 
-pub fn arrange(node: &mut MapNode, rect: Rect) {
+pub fn arrange(node: &mut Tree, rect: Rect) {
     node.rect = Some(rect);
     let rect = node.rect.unwrap();
     if rect.w * rect.h == 0.0 {
         return;
     } else {
-        node.children.sort_by(|a, b| b.size.cmp(&a.size));
+        node.children.sort_by(|a, b| b.size().cmp(&a.size()));
         arrange_nodes(&mut node.children, rect);
     }
 }
 
-fn arrange_nodes(nodes: &mut [MapNode], rect: Rect) {
+fn arrange_nodes(nodes: &mut [Tree], rect: Rect) {
     if nodes.len() == 0 {
     } else if nodes.len() == 1 {
         arrange(&mut nodes[0], rect);
@@ -44,11 +44,11 @@ fn arrange_nodes(nodes: &mut [MapNode], rect: Rect) {
     }
 }
 
-fn get_half_size(nodes: &mut [MapNode]) -> Result<(usize, f32), String> {
+fn get_half_size(nodes: &mut [Tree]) -> Result<(usize, f32), String> {
     let mut half_size = 0;
-    let nodes_size = nodes.iter().map(|child| child.size).sum::<i64>();
+    let nodes_size = nodes.iter().map(|child| child.size()).sum::<i64>();
     for (i, child) in nodes.iter().enumerate() {
-        half_size += child.size;
+        half_size += child.size();
         if half_size as f64 >= (nodes_size as f64 / 2.0) {
             let half_size_coef = half_size as f32 / nodes_size as f32;
             return Ok((i + 1, half_size_coef));
@@ -98,7 +98,6 @@ mod tests {
     use super::*;
     use crate::arrangements::linear;
     use crate::arrangements::linear::tests::{assert_float_eq, float_eq};
-    use crate::node::Node;
 
     #[test]
     fn test_squareness() {
@@ -112,13 +111,12 @@ mod tests {
 
     #[test]
     fn test_half_size_empty() {
-        let result = get_half_size(&mut []).expect_err("should fail");
+        let _ = get_half_size(&mut []).expect_err("should fail");
     }
 
     #[test]
     fn test_half_size_one() {
-        let (index, size) =
-            get_half_size(&mut [MapNode::new(Node::new_from_size("".to_string(), 1))]).unwrap();
+        let (index, size) = get_half_size(&mut [Tree::new_from_size("".to_string(), 1)]).unwrap();
         assert_eq!(index, 1);
         assert_eq!(size, 1.0);
     }
@@ -126,8 +124,8 @@ mod tests {
     #[test]
     fn test_half_size_two() {
         let (index, size) = get_half_size(&mut [
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            Tree::new_from_size("".to_string(), 1),
+            Tree::new_from_size("".to_string(), 1),
         ])
         .unwrap();
         assert_eq!(index, 1);
@@ -137,9 +135,9 @@ mod tests {
     #[test]
     fn test_half_size_three() {
         let (index, size) = get_half_size(&mut [
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            Tree::new_from_size("".to_string(), 1),
+            Tree::new_from_size("".to_string(), 1),
+            Tree::new_from_size("".to_string(), 1),
         ])
         .unwrap();
         assert_eq!(index, 2);
@@ -149,8 +147,8 @@ mod tests {
     #[test]
     fn test_half_size_two_big() {
         let (index, size) = get_half_size(&mut [
-            MapNode::new(Node::new_from_size("".to_string(), 2)),
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            Tree::new_from_size("".to_string(), 2),
+            Tree::new_from_size("".to_string(), 1),
         ])
         .unwrap();
         assert_eq!(index, 1);
@@ -161,10 +159,9 @@ mod tests {
     fn test_basic_binary() {
         let mut children = Vec::new();
         for i in 1..=10 {
-            children.push(Node::new_from_size(format!("child_{}", i), i));
+            children.push(Tree::new_from_size(format!("child_{}", i), i));
         }
-        let tree = Node::new_from_children("parent".to_string(), children);
-        let mut tree = MapNode::new(tree);
+        let mut tree = Tree::new_from_children("parent".to_string(), children);
         linear::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0), 0.0);
         let squareness_linear = average_squareness(
             &tree
@@ -205,10 +202,9 @@ mod tests {
         let mut children = Vec::new();
         let children_count = 8;
         for i in 1..=children_count {
-            children.push(Node::new_from_size(format!("child_{}", i), 1));
+            children.push(Tree::new_from_size(format!("child_{}", i), 1));
         }
-        let tree = Node::new_from_children("parent".to_string(), children);
-        let mut tree = MapNode::new(tree);
+        let mut tree = Tree::new_from_children("parent".to_string(), children);
         arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
         assert_eq!(tree.children.len(), children_count);
         for child in &mut tree.children {
@@ -217,7 +213,7 @@ mod tests {
         }
     }
 
-    fn area(rectangles: &[MapNode]) -> f32 {
+    fn area(rectangles: &[Tree]) -> f32 {
         rectangles
             .iter()
             .map(|node| node.rect.unwrap().w * node.rect.unwrap().h)

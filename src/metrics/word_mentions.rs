@@ -1,5 +1,5 @@
 use crate::metrics::bytes_per_file::has_allowed_extension;
-use crate::node::Node;
+use crate::tree::Tree;
 use crate::AnyError;
 use macroquad::prelude::{error, warn};
 use std::collections::HashMap;
@@ -11,15 +11,15 @@ pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
     "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml", "yaml", "yml",
 ];
 
-pub fn word_mentions(folder: &PathBuf) -> Result<Node, AnyError> {
+pub fn word_mentions(folder: &PathBuf) -> Result<Tree, AnyError> {
     let mut mentions = HashMap::new();
     word_mentions_recursive(folder, &mut mentions)?;
     let mut nodes = Vec::new();
     nodes.reserve(mentions.len());
     for (word, count) in mentions {
-        nodes.push(Node::new_from_size(word, count));
+        nodes.push(Tree::new_from_size(word, count));
     }
-    Ok(Node::new_from_children("".to_string(), nodes))
+    Ok(Tree::new_from_children("".to_string(), nodes))
 }
 
 fn word_mentions_recursive(
