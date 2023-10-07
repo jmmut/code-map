@@ -116,9 +116,8 @@ mod tests {
 
     #[test]
     fn test_half_size_one() {
-        let (index, size) = get_half_size(&mut [
-            MapNode::new(Node::new_from_size("".to_string(), 1)),
-            ]).unwrap();
+        let (index, size) =
+            get_half_size(&mut [MapNode::new(Node::new_from_size("".to_string(), 1))]).unwrap();
         assert_eq!(index, 1);
         assert_eq!(size, 1.0);
     }
@@ -128,7 +127,8 @@ mod tests {
         let (index, size) = get_half_size(&mut [
             MapNode::new(Node::new_from_size("".to_string(), 1)),
             MapNode::new(Node::new_from_size("".to_string(), 1)),
-        ]).unwrap();
+        ])
+        .unwrap();
         assert_eq!(index, 1);
         assert_eq!(size, 0.5);
     }
@@ -139,7 +139,8 @@ mod tests {
             MapNode::new(Node::new_from_size("".to_string(), 1)),
             MapNode::new(Node::new_from_size("".to_string(), 1)),
             MapNode::new(Node::new_from_size("".to_string(), 1)),
-        ]).unwrap();
+        ])
+        .unwrap();
         assert_eq!(index, 2);
         assert_float_eq(size, 0.66666666);
     }
@@ -149,7 +150,8 @@ mod tests {
         let (index, size) = get_half_size(&mut [
             MapNode::new(Node::new_from_size("".to_string(), 2)),
             MapNode::new(Node::new_from_size("".to_string(), 1)),
-        ]).unwrap();
+        ])
+        .unwrap();
         assert_eq!(index, 1);
         assert_float_eq(size, 0.6666666);
     }

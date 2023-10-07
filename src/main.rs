@@ -1,4 +1,3 @@
-mod cli_args;
 mod node;
 mod treemap;
 
@@ -60,6 +59,8 @@ async fn main() -> Result<(), AnyError> {
         arrangement,
         metric,
     } = Cli::parse();
+
+    let time_before = std::time::Instant::now();
     let (tree, units) = match metric.as_str() {
         "bytes-per-file" | "b" => (
             metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap(),
@@ -74,8 +75,16 @@ async fn main() -> Result<(), AnyError> {
             metric
         ),
     };
+    let time_after = std::time::Instant::now();
+    info!("computing metrics took {:?}", time_after - time_before);
 
     let mut treemap = MapNode::new(tree);
+    let counts = treemap.count();
+    info!(
+        "There are {} items. {} including the hierarchy levels",
+        counts.leafs, counts.total
+    );
+
     let width = screen_width();
     let height = screen_height();
     let available = round_rect(Rect::new(
@@ -96,7 +105,7 @@ async fn main() -> Result<(), AnyError> {
         );
     }
     let time_after = std::time::Instant::now();
-    println!("arrangement took {:?}", time_after - time_before);
+    info!("arrangement took {:?}", time_after - time_before);
 
     let font_size = choose_font_size(width, height);
     loop {
@@ -104,7 +113,10 @@ async fn main() -> Result<(), AnyError> {
             break;
         }
         clear_background(LIGHTGRAY);
+
         draw_pointed_slice(units, &mut treemap, available, font_size);
+        let Rect { x, y, w, h } = round_rect(available);
+        draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
         draw_nodes(&treemap, available, font_size, 1.0, BLACK);
         next_frame().await
     }
@@ -164,12 +176,15 @@ fn draw_pointed_slice(units: &str, treemap: &mut MapNode, available: Rect, font_
             font_size,
             BLACK,
         );
+        if is_mouse_button_pressed(MouseButton::Left) {
+            debug!("{:#?}", deepest_child)
+        }
     }
 }
 
 fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
-        let Rect { x, y, w, h } = trunc_rect(rect);
+        let Rect { x, y, w, h } = round_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
         // draw_text(
         //     &node.name,
@@ -193,11 +208,13 @@ fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, c
 
 /// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
 fn round_rect(rect: Rect) -> Rect {
+    let rounded_x = rect.x.round();
+    let rounded_y = rect.y.round();
     Rect::new(
-        rect.x.round(),
+        rounded_x,
         rect.y.round(),
-        rect.w.round(),
-        rect.h.round(),
+        (rect.x + rect.w).round() - rounded_x,
+        (rect.y + rect.h).round() - rounded_y,
     )
 }
 

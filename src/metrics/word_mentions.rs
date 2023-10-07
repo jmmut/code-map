@@ -18,10 +18,7 @@ pub fn word_mentions(folder: &PathBuf) -> Result<Node, AnyError> {
     for (word, count) in mentions {
         nodes.push(Node::new_from_size(word, count));
     }
-    Ok(Node::new_from_children(
-        "".to_string(),
-        nodes,
-    ))
+    Ok(Node::new_from_children("".to_string(), nodes))
 }
 
 #[must_use]

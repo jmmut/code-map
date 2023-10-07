@@ -9,6 +9,11 @@ pub struct MapNode {
     pub children: Vec<MapNode>,
 }
 
+pub struct Counts {
+    pub total: usize,
+    pub leafs: usize,
+}
+
 impl MapNode {
     pub fn new(raw_tree: Node) -> Self {
         let Node {
@@ -49,6 +54,49 @@ impl MapNode {
             }
         }
         result
+    }
+
+    /// Returns the count of leaf nodes (e.g. actual files in bytes-per-file) and total nodes (files + folders)
+    pub fn count(&self) -> Counts {
+        if self.is_leaf() {
+            Counts { total: 1, leafs: 1 }
+        } else {
+            let mut counts = Counts { total: 1, leafs: 0 };
+            for child in &self.children {
+                let Counts { total, leafs } = child.count();
+                counts.leafs += leafs;
+                counts.total += total;
+            }
+            counts
+        }
+    }
+
+
+
+    /// Returns the count of leaf nodes (e.g. actual files in bytes-per-file) and total nodes (files + folders)
+    pub fn count_if<F: Fn(&MapNode) -> bool>(&self, predicate: F) -> Counts {
+        let count_self = if predicate(self) { 1 } else { 0 };
+        if self.is_leaf() {
+            Counts {
+                total: count_self,
+                leafs: 1,
+            }
+        } else {
+            let mut counts = Counts {
+                total: count_self,
+                leafs: 0,
+            };
+            for child in &self.children {
+                let Counts { total, leafs } = child.count();
+                counts.leafs += leafs;
+                counts.total += total;
+            }
+            counts
+        }
+    }
+
+    fn is_leaf(&self) -> bool {
+        self.children.is_empty()
     }
 }
 
