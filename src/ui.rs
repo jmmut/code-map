@@ -33,7 +33,7 @@ pub struct Ui {
     searcher: Searcher,
     font_size: f32,
     selected: Option<Vec<TreeView>>,
-    _level: Option<usize>,
+    level: Option<usize>,
 }
 
 impl Ui {
@@ -64,7 +64,7 @@ impl Ui {
             font_size,
             searcher,
             selected: None,
-            _level: None,
+            level: None,
         }
     }
 
@@ -80,6 +80,7 @@ impl Ui {
             self.font_size,
             &self.searcher,
             &mut self.selected,
+            &mut self.level
         );
 
         let Rect { x, y, w, h } = round_rect(self.available);
@@ -109,7 +110,7 @@ fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Ve
             let nodes_pointed = tree.get_nested_by_position(mouse_position);
             *selected = Some(TreeView::from_nodes(&nodes_pointed));
         } else {
-            *selected = None;
+            // *selected = None;
         }
     }
 
@@ -125,14 +126,15 @@ fn choose_and_draw_nested_nodes(
     font_size: f32,
     searcher: &Searcher,
     selected: &mut Option<Vec<TreeView>>,
+    level: &mut Option<usize>,
 ) {
     if let Some(nested_nodes) = searcher.get_result() {
         *selected = Some(nested_nodes.clone());
-        draw_nested_nodes_and_path(units, available, font_size, &nested_nodes);
+        draw_nested_nodes_and_path(units, available, font_size, &nested_nodes, level);
     } else if let Some(selected_nodes) = &selected {
-        draw_nested_nodes_and_path(units, available, font_size, &selected_nodes);
+        draw_nested_nodes_and_path(units, available, font_size, &selected_nodes, level);
     } else {
-        *selected = draw_hovered_nested_nodes(units, &tree, available, font_size);
+        *selected = draw_hovered_nested_nodes(units, &tree, available, font_size, level);
     }
     if is_key_pressed(KeyCode::Backspace) {
         if let Some(nested_nodes) = selected {
@@ -141,7 +143,13 @@ fn choose_and_draw_nested_nodes(
     }
 }
 
-fn draw_nested_nodes_and_path(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<TreeView>) {
+fn draw_nested_nodes_and_path(
+    units: &str,
+    available: Rect,
+    font_size: f32,
+    nested_nodes: &Vec<TreeView>,
+    level_opt: &mut Option<usize>,
+) {
     if nested_nodes.len() > 0 {
         let deepest_child = nested_nodes.last().unwrap();
         let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
@@ -155,15 +163,24 @@ fn draw_nested_nodes_and_path(units: &str, available: Rect, font_size: f32, nest
         let nodes_count = nested_nodes.len();
 
         // draw color background over the node name at the bottom
-        for (i_rev, node) in nested_nodes.iter().rev().enumerate() {
+        let mut previous_width = 0.0;
+        for (i, node) in nested_nodes.iter().enumerate() {
             let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
-            draw_rectangle(
-                available.x,
+            let rect = Rect::new(
+                available.x + previous_width,
                 2.0 * available.y + available.h,
-                dimensions.width,
+                dimensions.width - previous_width,
                 1.5 * font_size,
-                COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
             );
+            if level_opt.is_some_and(|level| level < i) {
+                draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 4.0, COLORS[i % COLORS.len()]);
+            } else {
+                draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
+            }
+            if is_rect_clicked(&rect) {
+                *level_opt = Some(i);
+            }
+            previous_width = dimensions.width;
         }
         draw_text(
             &text,
@@ -175,11 +192,16 @@ fn draw_nested_nodes_and_path(units: &str, available: Rect, font_size: f32, nest
     }
 }
 
+fn is_rect_clicked(rect: &Rect) -> bool {
+    is_mouse_button_pressed(MouseButton::Left) && rect.contains(Vec2::from(mouse_position()))
+}
+
 fn draw_hovered_nested_nodes(
     units: &str,
     treemap: &Tree,
     available: Rect,
     font_size: f32,
+    level: &mut Option<usize>
 ) -> Option<Vec<TreeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
@@ -189,6 +211,7 @@ fn draw_hovered_nested_nodes(
             available,
             font_size,
             &TreeView::from_nodes(&nodes_pointed),
+            level,
         );
         if is_mouse_button_pressed(MouseButton::Left) {
             // let deepest_child = nodes_pointed.last().unwrap();
