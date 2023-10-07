@@ -91,20 +91,19 @@ async fn main() -> Result<(), AnyError> {
     );
     log_time!(log_counts(&ui.tree));
 
-    loop {
-        if (is_key_pressed(KeyCode::Q)
-            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl)))
-            || is_key_down(KeyCode::Escape)
-        {
-            break;
-        }
-
+    while should_continue() {
         ui.draw();
-
         next_frame().await
     }
-    // println!("{:#?}", treemap);
     Ok(())
+}
+
+fn should_continue() -> bool {
+    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
+        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
+    let escape_pressed = is_key_down(KeyCode::Escape);
+    let should_quit = ctrl_q_pressed || escape_pressed;
+    !should_quit
 }
 
 fn window_conf() -> Conf {
