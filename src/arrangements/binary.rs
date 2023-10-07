@@ -84,6 +84,7 @@ fn squareness(rect: &Rect) -> f32 {
     }
 }
 
+#[allow(unused)]
 fn average_squareness(rectangles: &[Rect]) -> f32 {
     let mut sum = 0.0;
     for rect in rectangles {

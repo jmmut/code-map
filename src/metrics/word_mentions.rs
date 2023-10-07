@@ -22,7 +22,6 @@ pub fn word_mentions(folder: &PathBuf) -> Result<Node, AnyError> {
     Ok(Node::new_from_children("".to_string(), nodes))
 }
 
-#[must_use]
 fn word_mentions_recursive(
     folder: &PathBuf,
     mentions: &mut HashMap<String, i64>,
@@ -46,13 +45,11 @@ fn word_mentions_recursive(
     Ok(())
 }
 
-#[must_use]
 fn count_word_mentions_in_file(
     file: &PathBuf,
     mentions: &mut HashMap<String, i64>,
 ) -> Result<(), AnyError> {
     if is_text_file(file) {
-        let file_str = file.to_string_lossy().to_string();
         let file_content = fs::read_to_string(file)?;
         for word in file_content.split_terminator(|c: char| !c.is_alphanumeric() && c != '_') {
             if !word.is_empty() {

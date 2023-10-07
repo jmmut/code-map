@@ -70,14 +70,6 @@ pub struct Cli {
     pub all_extensions: bool,
 }
 
-fn log_time_elapsed<R, F: Fn() -> R>(f: F, name: &str) -> R {
-    let time_before = Instant::now();
-    let result = f();
-    let time_after = Instant::now();
-    info!("{} took {:?}", name, time_after - time_before);
-    result
-}
-
 macro_rules! log_time {
     ($e:expr $(,)?) => {{
         let time_before = Instant::now();
@@ -361,16 +353,6 @@ fn round_rect(rect: Rect) -> Rect {
         rect.y.round(),
         (rect.x + rect.w).round() - rounded_x,
         (rect.y + rect.h).round() - rounded_y,
-    )
-}
-
-/// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
-fn trunc_rect(rect: Rect) -> Rect {
-    Rect::new(
-        rect.x.trunc(),
-        rect.y.trunc(),
-        rect.w.trunc(),
-        rect.h.trunc(),
     )
 }
 
