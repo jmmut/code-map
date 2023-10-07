@@ -28,11 +28,12 @@ const COLORS: &[Color] = &[
 
 pub struct Ui {
     pub tree: Tree,
-    pub units: String,
+    units: String,
     pub available: Rect,
-    pub searcher: Searcher,
-    pub font_size: f32,
+    searcher: Searcher,
+    font_size: f32,
     selected: Option<Vec<TreeView>>,
+    _level: Option<usize>,
 }
 
 impl Ui {
@@ -63,28 +64,29 @@ impl Ui {
             font_size,
             searcher,
             selected: None,
+            _level: None,
         }
     }
 
     pub fn draw(&mut self) {
         clear_background(LIGHTGRAY);
 
-        select_node(&mut &mut self.tree, self.available, &mut &mut self.selected);
+        select_node_with_mouse(&self.tree, self.available, &mut self.selected);
 
         choose_and_draw_nested_nodes(
-            &mut &mut self.tree,
+            &self.tree,
             &self.units,
             self.available,
             self.font_size,
-            &mut &mut self.searcher,
-            &mut &mut self.selected,
+            &self.searcher,
+            &mut self.selected,
         );
 
         let Rect { x, y, w, h } = round_rect(self.available);
-        draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
-        draw_nodes(&&mut self.tree, self.available, self.font_size, 1.0, BLACK);
+        draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
+        draw_nodes_lines(&self.tree, self.available, self.font_size, 1.0, BLACK);
 
-        self.searcher.draw_search(&mut self.tree);
+        self.searcher.draw_search(&self.tree);
     }
 }
 
@@ -100,7 +102,7 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn select_node(tree: &mut Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
+fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
     if is_mouse_button_pressed(MouseButton::Left) {
         let mouse_position = Vec2::from(mouse_position());
         if available.contains(mouse_position) {
@@ -117,20 +119,20 @@ fn select_node(tree: &mut Tree, available: Rect, selected: &mut Option<Vec<TreeV
 }
 
 fn choose_and_draw_nested_nodes(
-    mut tree: &mut Tree,
+    tree: &Tree,
     units: &str,
     available: Rect,
     font_size: f32,
-    searcher: &mut Searcher,
+    searcher: &Searcher,
     selected: &mut Option<Vec<TreeView>>,
 ) {
     if let Some(nested_nodes) = searcher.get_result() {
         *selected = Some(nested_nodes.clone());
-        draw_nested_nodes(units, available, font_size, &nested_nodes);
+        draw_nested_nodes_and_path(units, available, font_size, &nested_nodes);
     } else if let Some(selected_nodes) = &selected {
-        draw_nested_nodes(units, available, font_size, &selected_nodes);
+        draw_nested_nodes_and_path(units, available, font_size, &selected_nodes);
     } else {
-        *selected = draw_pointed_slice(units, &mut tree, available, font_size);
+        *selected = draw_hovered_nested_nodes(units, &tree, available, font_size);
     }
     if is_key_pressed(KeyCode::Backspace) {
         if let Some(nested_nodes) = selected {
@@ -139,7 +141,7 @@ fn choose_and_draw_nested_nodes(
     }
 }
 
-fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<TreeView>) {
+fn draw_nested_nodes_and_path(units: &str, available: Rect, font_size: f32, nested_nodes: &Vec<TreeView>) {
     if nested_nodes.len() > 0 {
         let deepest_child = nested_nodes.last().unwrap();
         let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
@@ -173,24 +175,24 @@ fn draw_nested_nodes(units: &str, available: Rect, font_size: f32, nested_nodes:
     }
 }
 
-fn draw_pointed_slice(
+fn draw_hovered_nested_nodes(
     units: &str,
-    treemap: &mut Tree,
+    treemap: &Tree,
     available: Rect,
     font_size: f32,
 ) -> Option<Vec<TreeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_nested_nodes(
+        draw_nested_nodes_and_path(
             units,
             available,
             font_size,
             &TreeView::from_nodes(&nodes_pointed),
         );
         if is_mouse_button_pressed(MouseButton::Left) {
-            let deepest_child = nodes_pointed.last().unwrap();
-            debug!("{:#?}", deepest_child);
+            // let deepest_child = nodes_pointed.last().unwrap();
+            // debug!("{:#?}", deepest_child);
             return Some(TreeView::from_nodes(&nodes_pointed));
         }
     }
@@ -209,7 +211,7 @@ fn round_rect(rect: Rect) -> Rect {
     )
 }
 
-fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
+fn draw_nodes_lines(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
         let Rect { x, y, w, h } = round_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
@@ -228,7 +230,7 @@ fn draw_nodes(node: &Tree, available: Rect, font_size: f32, thickness: f32, colo
         //     BLACK,
         // );
         for child in &node.children {
-            draw_nodes(child, available, font_size, thickness, color);
+            draw_nodes_lines(child, available, font_size, thickness, color);
         }
     }
 }
