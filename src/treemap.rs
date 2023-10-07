@@ -89,6 +89,23 @@ impl MapNode {
     fn is_leaf(&self) -> bool {
         self.children.is_empty()
     }
+
+    pub fn search(&self, search_word: &str, limit: usize) -> Vec<String> {
+        let lowercase = search_word.to_lowercase();
+        let mut result = Vec::new();
+        self.search_recursive(&lowercase, limit, &mut result);
+        result
+    }
+    fn search_recursive(&self, search_word:  &str, limit: usize, result: &mut Vec<String>) {
+        if result.len() < limit {
+            if self.name.to_lowercase().contains(search_word) {
+                result.push(self.name.clone());
+            }
+            for child in &self.children {
+                child.search_recursive(search_word, limit, result);
+            }
+        }
+    }
 }
 
 impl PartialEq for MapNode {

@@ -3,7 +3,10 @@ mod treemap;
 
 use crate::treemap::MapNode;
 use clap::Parser;
+use macroquad::hash;
 use macroquad::prelude::*;
+use macroquad::ui::root_ui;
+use macroquad::ui::widgets::InputText;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -99,10 +102,22 @@ async fn main() -> Result<(), AnyError> {
         height * 0.75,
     ));
 
-    log_time!(arrange(padding, arrangement, &mut treemap, available), "arrangement");
+    log_time!(
+        arrange(padding, arrangement, &mut treemap, available),
+        "arrangement"
+    );
     log_time!(log_counts(&treemap));
 
     let font_size = choose_font_size(width, height);
+    let mut searcher = Searcher::new(
+        Rect::new(
+            available.x,
+            available.y + available.h + font_size * 2.0,
+            available.w,
+            font_size * 1.5,
+        ),
+        font_size,
+    );
     loop {
         if is_key_pressed(KeyCode::Escape) {
             break;
@@ -113,6 +128,9 @@ async fn main() -> Result<(), AnyError> {
         let Rect { x, y, w, h } = round_rect(available);
         draw_rectangle_lines(x, y, w, h + 1.0, 2.0, BLACK);
         draw_nodes(&treemap, available, font_size, 1.0, BLACK);
+        if let Some(search_word) = searcher.draw_search() {
+            info!("{:?}", treemap.search(&search_word, 20));
+        }
         next_frame().await
     }
     // println!("{:#?}", treemap);
@@ -267,4 +285,52 @@ fn trunc_rect(rect: Rect) -> Rect {
         rect.w.trunc(),
         rect.h.trunc(),
     )
+}
+
+pub struct Searcher {
+    tag: String,
+    tag_pos: Vec2,
+    font_size: f32,
+    rect: Rect,
+    search_word: String,
+}
+impl Searcher {
+    pub fn new(mut rect: Rect, font_size: f32) -> Self {
+        let tag = "Search (F): ".to_string();
+        let text_dimensions = measure_text(&tag, None, font_size as u16, 1.0);
+        let tag_pos = Vec2::new(rect.x, rect.y);
+        rect.x += text_dimensions.width;
+        rect.w -= text_dimensions.width;
+        rect.y -= font_size;
+        Self {
+            tag,
+            tag_pos,
+            font_size,
+            rect,
+            search_word: "".to_string(),
+        }
+    }
+    fn draw_search(&mut self) -> Option<String> {
+        let input_id = hash!();
+        draw_text(
+            &self.tag,
+            self.tag_pos.x,
+            self.tag_pos.y,
+            self.font_size,
+            BLACK,
+        );
+        InputText::new(input_id)
+            .position(self.rect.point())
+            .size(self.rect.size())
+            .ui(&mut root_ui(), &mut self.search_word);
+        if is_key_pressed(KeyCode::F) {
+            info!("focusing input");
+            root_ui().set_input_focus(input_id)
+        }
+        if self.search_word.is_empty() {
+            None
+        } else {
+            Some(self.search_word.clone())
+        }
+    }
 }
