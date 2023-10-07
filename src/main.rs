@@ -119,7 +119,9 @@ async fn main() -> Result<(), AnyError> {
         font_size,
     );
     loop {
-        if is_key_pressed(KeyCode::Escape) {
+        if is_key_pressed(KeyCode::Q)
+            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl))
+        {
             break;
         }
         clear_background(LIGHTGRAY);
@@ -305,11 +307,13 @@ pub struct Searcher {
     font_size: f32,
     rect: Rect,
     search_word: String,
+    focused: bool,
+    results: Vec<String>,
     result: Option<String>,
 }
 impl Searcher {
     pub fn new(mut rect: Rect, font_size: f32) -> Self {
-        let tag = "Search (F): ".to_string();
+        let tag = "Search (f): ".to_string();
         let text_dimensions = measure_text(&tag, None, font_size as u16, 1.0);
         let tag_pos = Vec2::new(rect.x, rect.y);
         rect.x += text_dimensions.width;
@@ -322,11 +326,12 @@ impl Searcher {
             font_size,
             rect,
             search_word: "".to_string(),
+            results: Vec::new(),
+            focused: false,
             result: None,
         }
     }
     fn draw_search_box(&mut self) -> Option<String> {
-        let input_id = hash!();
         draw_text(
             &self.tag,
             self.tag_pos.x,
@@ -335,27 +340,47 @@ impl Searcher {
             BLACK,
         );
 
-        InputText::new(input_id)
+        InputText::new(self.ui_id)
             .position(self.rect.point())
             .size(self.rect.size())
             .ui(&mut root_ui(), &mut self.search_word);
+
         if is_key_pressed(KeyCode::F) {
-            root_ui().set_input_focus(input_id)
+            self.set_focus(true);
+        } else if is_key_pressed(KeyCode::Escape) {
+            self.set_focus(false);
+        } else if is_mouse_button_pressed(MouseButton::Left) {
+            self.set_focus(self.rect.contains(Vec2::from(mouse_position())));
         }
-        if self.search_word.is_empty() {
-            None
-        } else {
+        if self.focused && !self.search_word.is_empty() {
             Some(self.search_word.clone())
+        } else {
+            None
         }
     }
+
+    fn set_focus(&mut self, enabled: bool) {
+        if enabled {
+            self.focused = true;
+            root_ui().set_input_focus(self.ui_id);
+        } else {
+            self.focused = false;
+            root_ui().clear_input_focus();
+        }
+    }
+
     fn draw_search(&mut self, treemap: &MapNode) {
+        let previous_search = self.search_word.clone();
         if let Some(search_word) = self.draw_search_box() {
-            let results = treemap.search(&search_word, 20);
+            if previous_search != search_word {
+                self.results = treemap.search(&search_word, 20);
+            }
+            let results = &self.results;
+            let line_height = 1.2 * self.font_size;
+            let horizontal_pad = 0.4 * line_height;
             if results.len() > 0 {
                 let longest = results.iter().max_by_key(|w| w.len()).unwrap();
                 let dimensions = measure_text(longest, None, self.font_size as u16, 1.0);
-                let line_height = 1.2 * self.font_size;
-                let horizontal_pad = 0.4 * line_height;
                 let w = dimensions.width + 2.0 * horizontal_pad;
                 let h = (results.len() as f32 + 0.5) * line_height;
                 let space = 0.0 * line_height;
@@ -372,6 +397,14 @@ impl Searcher {
                 }
                 self.result = results.first().cloned();
             } else {
+                let dimensions = measure_text(&self.search_word, None, self.font_size as u16, 1.0);
+                draw_text(
+                    "No results",
+                    (self.rect.x + dimensions.width + 2.0 * horizontal_pad).round(),
+                    (self.tag_pos.y - line_height).round(),
+                    self.font_size,
+                    DARKGRAY,
+                );
                 self.result = None
             }
         } else {
@@ -380,7 +413,7 @@ impl Searcher {
     }
     fn get_result(&self) -> Option<String> {
         // if root_ui().is_focused(self.ui_id) {
-            self.result.clone()
+        self.result.clone()
         // }
     }
 }

@@ -110,14 +110,14 @@ impl MapNode {
     }
 
     pub fn search(&self, search_word: &str, limit: usize) -> Vec<String> {
-        let lowercase = search_word.to_lowercase();
+        // let search_word = search_word.to_lowercase();
         let mut result = Vec::new();
-        self.search_recursive(&lowercase, limit, &mut result);
+        self.search_recursive(&search_word, limit, &mut result);
         result
     }
     fn search_recursive(&self, search_word: &str, limit: usize, result: &mut Vec<String>) {
         if result.len() < limit {
-            if self.name.to_lowercase().contains(search_word) {
+            if self.name.contains(search_word) || self.name.to_lowercase().contains(search_word) {
                 result.push(self.name.clone());
             }
             for child in &self.children {
