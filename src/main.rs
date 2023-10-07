@@ -295,36 +295,37 @@ fn draw_nested_nodes(
     font_size: f32,
     nested_nodes: &Vec<MapNodeView>,
 ) {
-    let deepest_child = nested_nodes.last().unwrap();
-    let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
-    // let previous_end = available.x;
+    if nested_nodes.len() > 0 {
+        let deepest_child = nested_nodes.last().unwrap();
+        let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
 
-    // draw the color blocks in the nodes rect
-    for (i, node) in nested_nodes.iter().enumerate() {
-        let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-        // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
-        draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
-    }
-    let nodes_count = nested_nodes.len();
+        // draw the color blocks in the nodes rect
+        for (i, node) in nested_nodes.iter().enumerate() {
+            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
+            // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
+            draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+        }
+        let nodes_count = nested_nodes.len();
 
-    // draw color background over the node name at the bottom
-    for (i_rev, node) in nested_nodes.iter().rev().enumerate() {
-        let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
-        draw_rectangle(
+        // draw color background over the node name at the bottom
+        for (i_rev, node) in nested_nodes.iter().rev().enumerate() {
+            let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+            draw_rectangle(
+                available.x,
+                2.0 * available.y + available.h,
+                dimensions.width,
+                1.5 * font_size,
+                COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
+            );
+        }
+        draw_text(
+            &text,
             available.x,
-            2.0 * available.y + available.h,
-            dimensions.width,
-            1.5 * font_size,
-            COLORS[(nodes_count - 1 - i_rev) % COLORS.len()],
+            2.0 * available.y + available.h + 1.0 * font_size,
+            font_size,
+            BLACK,
         );
     }
-    draw_text(
-        &text,
-        available.x,
-        2.0 * available.y + available.h + 1.0 * font_size,
-        font_size,
-        BLACK,
-    );
 }
 
 fn draw_nodes(node: &MapNode, available: Rect, font_size: f32, thickness: f32, color: Color) {
