@@ -32,7 +32,10 @@ pub fn bytes_per_file(folder: &PathBuf) -> Result<Node, AnyError> {
     }
 }
 
-pub fn bytes_per_file_with_extension(folder: &PathBuf, extensions: &[&str]) -> Result<Option<Node>, AnyError> {
+pub fn bytes_per_file_with_extension(
+    folder: &PathBuf,
+    extensions: &[&str],
+) -> Result<Option<Node>, AnyError> {
     let path = Path::new(folder);
     let path_str = folder.to_string_lossy().to_string();
     if path.is_symlink() {

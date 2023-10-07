@@ -1,15 +1,14 @@
+use crate::metrics::bytes_per_file::has_allowed_extension;
 use crate::node::Node;
 use crate::AnyError;
 use macroquad::prelude::{error, warn};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::metrics::bytes_per_file::has_allowed_extension;
 
 pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
-    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json",
-    "jsx", "m", "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml",
-    "yaml", "yml",
+    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json", "jsx", "m",
+    "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml", "yaml", "yml",
 ];
 
 pub fn word_mentions(folder: &PathBuf) -> Result<Node, AnyError> {
@@ -55,7 +54,7 @@ fn count_word_mentions_in_file(
     if is_text_file(file) {
         let file_str = file.to_string_lossy().to_string();
         let file_content = fs::read_to_string(file)?;
-        for word in file_content.split_terminator(|c: char| !c.is_alphabetic()) {
+        for word in file_content.split_terminator(|c: char| !c.is_alphanumeric() && c != '_') {
             if !word.is_empty() {
                 let count = mentions.entry(word.to_string()).or_insert(0);
                 *count += 1;

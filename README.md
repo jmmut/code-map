@@ -27,15 +27,16 @@ This arrangement is not great when a node has many children. The children will b
 ## Roadmap
 
 - UI
-  - [ ] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
-    - [ ] right click to remove selection
-  - [ ] box to search for a file (fuzzy search)
+  - [/] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
+    - [x] right click to remove selection
+  - [x] box to search for a file (substring)
+    - [ ] fuzzy search
   - [/] other arrangements that don't draw very thin lines
   - [ ] zoom in
 - cli/logs
   - [x] -a --arrangement 
-  - [/] -m --metric (file size, line count, code complexity, etc.)
-  - [ ] -x --all-file-extensions
+  - [x] -m --metric (file size, line count, code complexity, etc.)
+  - [x] -x --all-file-extensions
   - [ ] -i --input-file (read counts from a file / stdin / sql dump)
   - [ ] -o --output-file (dump the hierarchical metrics to a file, as some metrics might be expensive to compute, e.g. code complexity)
   - [ ] aggregate counts of ignored files/extensions

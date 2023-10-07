@@ -22,9 +22,9 @@ mod metrics {
 }
 
 use crate::arrangements::binary;
+use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use crate::node::Node;
 use arrangements::linear;
-use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -105,7 +105,10 @@ async fn main() -> Result<(), AnyError> {
         all_extensions,
     } = Cli::parse();
 
-    let (tree, units) = log_time!(compute_metrics(&input_folder, &metric, all_extensions), "computing metrics");
+    let (tree, units) = log_time!(
+        compute_metrics(&input_folder, &metric, all_extensions),
+        "computing metrics"
+    );
     let mut treemap = log_time!(MapNode::new(tree), "converting to MapNode");
 
     let width = screen_width();
@@ -191,13 +194,22 @@ fn window_conf() -> Conf {
     }
 }
 
-fn compute_metrics(input_folder: &PathBuf, metric: &str, all_extensions: bool) -> (Node, &'static str) {
+fn compute_metrics(
+    input_folder: &PathBuf,
+    metric: &str,
+    all_extensions: bool,
+) -> (Node, &'static str) {
     let (tree, units) = match metric {
         "bytes-per-file" | "b" => (
             if all_extensions {
                 metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap()
             } else {
-                metrics::bytes_per_file::bytes_per_file_with_extension(&input_folder, TEXT_FILE_EXTENSIONS).unwrap().unwrap()
+                metrics::bytes_per_file::bytes_per_file_with_extension(
+                    &input_folder,
+                    TEXT_FILE_EXTENSIONS,
+                )
+                .unwrap()
+                .unwrap()
             },
             "bytes",
         ),
@@ -437,6 +449,7 @@ impl Searcher {
         if let Some(search_word) = self.draw_search_box() {
             if previous_search != search_word {
                 self.results = treemap.search(&search_word, 20);
+                self.results.sort_by(|a, b| a.len().cmp(&b.len()));
                 if let Some(first) = self.results.first() {
                     self.nested_results =
                         Some(MapNodeView::from_nodes(&treemap.get_nested_by_name(first)));
@@ -446,7 +459,7 @@ impl Searcher {
             let line_height = 1.2 * self.font_size;
             let horizontal_pad = 0.4 * line_height;
             if results.len() > 0 {
-                let longest = results.iter().max_by_key(|w| w.len()).unwrap();
+                let longest = results.last().unwrap();
                 let dimensions = measure_text(longest, None, self.font_size as u16, 1.0);
                 let w = dimensions.width + 2.0 * horizontal_pad;
                 let h = (results.len() as f32 + 0.5) * line_height;
