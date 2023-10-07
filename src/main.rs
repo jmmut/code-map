@@ -32,7 +32,9 @@ const DEFAULT_WINDOW_TITLE: &str = "Code Map";
 const FONT_SIZE: f32 = 16.0;
 
 const COLORS: &[Color] = &[
-    BEIGE, ORANGE, RED, PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
+    BEIGE,
+Color::new(1.0, 0.40, 0.40, 1.00),
+    PINK, PURPLE, VIOLET, BLUE, SKYBLUE, GREEN, LIME, WHITE,
 ];
 
 /// Plot hierarchical metrics like file sizes in a folder structure.
@@ -386,11 +388,12 @@ impl Searcher {
                 let space = 0.0 * line_height;
                 draw_rectangle(self.rect.x, self.rect.y - h - space, w, h, LIGHTGRAY);
                 draw_rectangle_lines(self.rect.x, self.rect.y - h - space, w, h, 2.0, BLACK);
+                draw_rectangle_lines(self.rect.x+horizontal_pad *0.5, self.rect.y+horizontal_pad *0.5 - h - space, w - horizontal_pad, line_height, 2.0, GRAY);
                 for (i, result) in results.iter().enumerate() {
                     draw_text(
                         result,
-                        self.rect.x + horizontal_pad,
-                        self.rect.y - h - space + (i as f32 + 1.0) * line_height,
+                        (self.rect.x + horizontal_pad).round(),
+                        (self.rect.y - h - space + (i as f32 + 1.0) * line_height).round(),
                         self.font_size,
                         BLACK,
                     );
@@ -403,7 +406,7 @@ impl Searcher {
                     (self.rect.x + dimensions.width + 2.0 * horizontal_pad).round(),
                     (self.tag_pos.y - line_height).round(),
                     self.font_size,
-                    DARKGRAY,
+                    GRAY,
                 );
                 self.result = None
             }
