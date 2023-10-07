@@ -61,6 +61,23 @@ fn log_time_elapsed<R, F: Fn() -> R>(f: F, name: &str) -> R {
     result
 }
 
+macro_rules! log_time {
+    ($e:expr $(,)?) => {{
+        let time_before = Instant::now();
+        let result = $e;
+        let time_after = Instant::now();
+        info!("{} took {:?}", stringify!($e), time_after - time_before);
+        result
+    }};
+    ($e:expr, $name:expr $(,)?) => {{
+        let time_before = Instant::now();
+        let result = $e;
+        let time_after = Instant::now();
+        info!("{} took {:?}", $name, time_after - time_before);
+        result
+    }};
+}
+
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
     let Cli {
@@ -70,15 +87,8 @@ async fn main() -> Result<(), AnyError> {
         metric,
     } = Cli::parse();
 
-    let (tree, units) = log_time_elapsed(
-        || compute_metrics(&input_folder, &metric),
-        "computing metrics",
-    );
-
-    let time_before = Instant::now();
-    let mut treemap = MapNode::new(tree);
-    let time_after = Instant::now();
-    info!("conversion to MapNode took {:?}", time_after - time_before);
+    let (tree, units) = log_time!(compute_metrics(&input_folder, &metric), "computing metrics");
+    let mut treemap = log_time!(MapNode::new(tree), "converting to MapNode");
 
     let width = screen_width();
     let height = screen_height();
@@ -89,15 +99,8 @@ async fn main() -> Result<(), AnyError> {
         height * 0.75,
     ));
 
-    let time_before = Instant::now();
-    arrange(padding, arrangement, &mut treemap, available);
-    let time_after = Instant::now();
-    info!("arrangement took {:?}", time_after - time_before);
-
-    let time_before = Instant::now();
-    log_counts(&treemap);
-    let time_after = Instant::now();
-    info!("counting took {:?}", time_after - time_before);
+    log_time!(arrange(padding, arrangement, &mut treemap, available), "arrangement");
+    log_time!(log_counts(&treemap));
 
     let font_size = choose_font_size(width, height);
     loop {
