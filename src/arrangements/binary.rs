@@ -18,7 +18,7 @@ fn arrange_nodes(nodes: &mut [MapNode], rect: Rect) {
     } else if nodes.len() == 1 {
         arrange(&mut nodes[0], rect);
     } else if nodes.len() == 2 {
-        let (_half_index, half_size_coef) = get_half_size(nodes);
+        let (_half_index, half_size_coef) = get_half_size(nodes).unwrap();
         let aspect_ratio = rect.w / rect.h;
         let (rect_1, rect_2) = if aspect_ratio >= 1.0 {
             divide_rectangle_horizontally(rect, half_size_coef)
@@ -29,7 +29,7 @@ fn arrange_nodes(nodes: &mut [MapNode], rect: Rect) {
         arrange(&mut nodes[0], rect_1);
         arrange(&mut nodes[1], rect_2);
     } else {
-        let (half_index, half_size_coef) = get_half_size(nodes);
+        let (half_index, half_size_coef) = get_half_size(nodes).unwrap();
         let aspect_ratio = rect.w / rect.h;
         let (rect_1, rect_2) = if aspect_ratio >= 1.0 {
             divide_rectangle_horizontally(rect, half_size_coef)
@@ -44,19 +44,20 @@ fn arrange_nodes(nodes: &mut [MapNode], rect: Rect) {
     }
 }
 
-fn get_half_size(nodes: &mut [MapNode]) -> (usize, f32) {
-    let mut half_index = 1;
+fn get_half_size(nodes: &mut [MapNode]) -> Result<(usize, f32), String> {
     let mut half_size = 0;
-    let nodes_size = nodes.iter().map(|node| node.size).sum::<i64>();
+    let nodes_size = nodes.iter().map(|child| child.size).sum::<i64>();
     for (i, child) in nodes.iter().enumerate() {
         half_size += child.size;
-        if half_size > nodes_size / 2 {
-            half_index += i;
-            break;
+        if half_size as f64 >= (nodes_size as f64 / 2.0) {
+            let half_size_coef = half_size as f32 / nodes_size as f32;
+            return Ok((i + 1, half_size_coef));
         }
     }
-    let half_size_coef = half_size as f32 / nodes_size as f32;
-    (half_index, half_size_coef)
+    Err(format!(
+        "Can't split in half. half_size: {}, nodes_size: {}, nodes: {:#?}",
+        half_size, nodes_size, nodes
+    ))
 }
 
 fn divide_rectangle_horizontally(rect: Rect, coef: f32) -> (Rect, Rect) {
@@ -95,7 +96,7 @@ fn average_squareness(rectangles: &[Rect]) -> f32 {
 mod tests {
     use super::*;
     use crate::arrangements::linear;
-    use crate::arrangements::linear::tests::float_eq;
+    use crate::arrangements::linear::tests::{assert_float_eq, float_eq};
     use crate::node::Node;
 
     #[test]
@@ -106,6 +107,51 @@ mod tests {
         assert_eq!(squareness(&Rect::new(0.0, 0.0, 0.0, 1.0)), 0.0);
         assert_eq!(squareness(&Rect::new(0.0, 0.0, 1.0, 0.0)), 0.0);
         assert_eq!(squareness(&Rect::new(0.0, 0.0, 0.0, 0.0)), 0.0);
+    }
+
+    #[test]
+    fn test_half_size_empty() {
+        let result = get_half_size(&mut []).expect_err("should fail");
+    }
+
+    #[test]
+    fn test_half_size_one() {
+        let (index, size) = get_half_size(&mut [
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            ]).unwrap();
+        assert_eq!(index, 1);
+        assert_eq!(size, 1.0);
+    }
+
+    #[test]
+    fn test_half_size_two() {
+        let (index, size) = get_half_size(&mut [
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+        ]).unwrap();
+        assert_eq!(index, 1);
+        assert_eq!(size, 0.5);
+    }
+
+    #[test]
+    fn test_half_size_three() {
+        let (index, size) = get_half_size(&mut [
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+        ]).unwrap();
+        assert_eq!(index, 2);
+        assert_float_eq(size, 0.66666666);
+    }
+
+    #[test]
+    fn test_half_size_two_big() {
+        let (index, size) = get_half_size(&mut [
+            MapNode::new(Node::new_from_size("".to_string(), 2)),
+            MapNode::new(Node::new_from_size("".to_string(), 1)),
+        ]).unwrap();
+        assert_eq!(index, 1);
+        assert_float_eq(size, 0.6666666);
     }
 
     #[test]
@@ -149,6 +195,23 @@ mod tests {
             area_binary,
             area_linear
         );
+    }
+
+    #[test]
+    fn test_binary_same_size() {
+        let mut children = Vec::new();
+        let children_count = 8;
+        for i in 1..=children_count {
+            children.push(Node::new_from_size(format!("child_{}", i), 1));
+        }
+        let tree = Node::new_from_children("parent".to_string(), children);
+        let mut tree = MapNode::new(tree);
+        arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        assert_eq!(tree.children.len(), children_count);
+        for child in &mut tree.children {
+            let r = child.rect.unwrap();
+            assert_eq!(r.w * r.h, 1.0 / children_count as f32);
+        }
     }
 
     fn area(rectangles: &[MapNode]) -> f32 {

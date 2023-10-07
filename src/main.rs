@@ -108,7 +108,7 @@ async fn main() -> Result<(), AnyError> {
         draw_nodes(&treemap, available, font_size, 1.0, BLACK);
         next_frame().await
     }
-    // println!("{:#?}", tree);
+    // println!("{:#?}", treemap);
     Ok(())
 }
 

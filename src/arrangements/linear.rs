@@ -65,11 +65,14 @@ pub mod tests {
     pub fn float_eq(a: f32, b: f32) -> bool {
         (a - b).abs() < 0.001
     }
+    pub fn assert_float_eq(a: f32, b: f32) {
+        assert!(float_eq(a, b), "floats not equal: {:?} == {:?}", a, b);
+    }
     fn rect_eq(a: Rect, b: Rect) -> bool {
         float_eq(a.x, b.x) && float_eq(a.y, b.y) && float_eq(a.w, b.w) && float_eq(a.h, b.h)
     }
     fn assert_rect_eq(a: Rect, b: Rect) {
-        assert!(rect_eq(a, b), "rects not equal: {:?} != {:?}", a, b);
+        assert!(rect_eq(a, b), "rects not equal: {:?} == {:?}", a, b);
     }
 
     #[test]
