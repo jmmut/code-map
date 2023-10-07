@@ -20,6 +20,7 @@ pub struct Searcher {
     result: Option<String>,
     results: Vec<String>,
     nested_results: Option<Vec<TreeView>>,
+    result_changed: bool,
 }
 
 impl Searcher {
@@ -41,10 +42,11 @@ impl Searcher {
             focused: false,
             result: None,
             nested_results: None,
+            result_changed: false,
         }
     }
-    pub fn get_result(&self) -> Option<&Vec<TreeView>> {
-        if self.focused {
+    pub fn get_new_result(&self) -> Option<&Vec<TreeView>> {
+        if self.focused && self.result_changed {
             self.nested_results.as_ref()
         } else {
             None
@@ -52,6 +54,7 @@ impl Searcher {
     }
 
     pub fn draw_search(&mut self, treemap: &Tree) {
+        self.result_changed = false;
         let previous_search = self.search_word.clone();
         if let Some(search_word) = self.draw_search_box() {
             if previous_search != search_word {
@@ -61,6 +64,7 @@ impl Searcher {
                     self.nested_results =
                         Some(TreeView::from_nodes(&treemap.get_nested_by_name(first)));
                 }
+                self.result_changed = true;
             }
             let results = &self.results;
             let line_height = 1.2 * self.font_size;

@@ -3,7 +3,7 @@ pub mod searcher;
 use macroquad::color::{Color, BEIGE, BLUE, GREEN, LIME, PINK, PURPLE, SKYBLUE, VIOLET, WHITE};
 use macroquad::math::f32;
 use macroquad::prelude::{
-    clear_background, debug, draw_rectangle, draw_rectangle_lines, draw_text, is_key_pressed,
+    clear_background, draw_rectangle, draw_rectangle_lines, draw_text, is_key_pressed,
     is_mouse_button_pressed, measure_text, mouse_position, screen_height, screen_width, KeyCode,
     MouseButton, Rect, Vec2, BLACK, LIGHTGRAY,
 };
@@ -19,10 +19,10 @@ const COLORS: &[Color] = &[
     PINK,
     PURPLE,
     VIOLET,
-    BLUE,
     SKYBLUE,
-    GREEN,
+    BLUE,
     LIME,
+    GREEN,
     WHITE,
 ];
 
@@ -71,8 +71,6 @@ impl Ui {
     pub fn draw(&mut self) {
         clear_background(LIGHTGRAY);
 
-        select_node_with_mouse(&self.tree, self.available, &mut self.selected);
-
         choose_and_draw_nested_nodes(
             &self.tree,
             &self.units,
@@ -80,8 +78,10 @@ impl Ui {
             self.font_size,
             &self.searcher,
             &mut self.selected,
-            &mut self.level
+            &mut self.level,
         );
+
+        select_node_with_mouse(&self.tree, self.available, &mut self.selected);
 
         let Rect { x, y, w, h } = round_rect(self.available);
         draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
@@ -128,7 +128,7 @@ fn choose_and_draw_nested_nodes(
     selected: &mut Option<Vec<TreeView>>,
     level: &mut Option<usize>,
 ) {
-    if let Some(nested_nodes) = searcher.get_result() {
+    if let Some(nested_nodes) = searcher.get_new_result() {
         *selected = Some(nested_nodes.clone());
         draw_nested_nodes_and_path(units, available, font_size, &nested_nodes, level);
     } else if let Some(selected_nodes) = &selected {
@@ -151,17 +151,6 @@ fn draw_nested_nodes_and_path(
     level_opt: &mut Option<usize>,
 ) {
     if nested_nodes.len() > 0 {
-        let deepest_child = nested_nodes.last().unwrap();
-        let text = format!("{}: {} {}", deepest_child.name, deepest_child.size, units);
-
-        // draw the color blocks in the nodes rect
-        for (i, node) in nested_nodes.iter().enumerate() {
-            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-            // draw_rectangle_lines(x, y, w, h, 10.0, COLORS[i % COLORS.len()]);
-            draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
-        }
-        let nodes_count = nested_nodes.len();
-
         // draw color background over the node name at the bottom
         let mut previous_width = 0.0;
         for (i, node) in nested_nodes.iter().enumerate() {
@@ -173,15 +162,41 @@ fn draw_nested_nodes_and_path(
                 1.5 * font_size,
             );
             if level_opt.is_some_and(|level| level < i) {
-                draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 4.0, COLORS[i % COLORS.len()]);
+                draw_rectangle_lines(
+                    rect.x,
+                    rect.y,
+                    rect.w,
+                    rect.h,
+                    4.0,
+                    COLORS[i % COLORS.len()],
+                );
             } else {
                 draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
             }
-            if is_rect_clicked(&rect) {
+            if is_rect_clicked(&rect, MouseButton::Left) {
                 *level_opt = Some(i);
             }
             previous_width = dimensions.width;
         }
+        let path_rect = Rect::new(
+            available.x,
+            2.0 * available.y + available.h,
+            previous_width,
+            1.5 * font_size,
+        );
+        if is_rect_clicked(&path_rect, MouseButton::Right) {
+            *level_opt = None;
+        }
+        let deepest_child = nested_nodes.last().unwrap();
+        let size = if let Some(level) = level_opt {
+            nested_nodes
+                .get(*level)
+                .map_or(deepest_child.size, |node| node.size)
+        } else {
+            deepest_child.size
+        };
+        let text = format!("{}: {} {}", deepest_child.name, size, units);
+
         draw_text(
             &text,
             available.x,
@@ -189,11 +204,22 @@ fn draw_nested_nodes_and_path(
             font_size,
             BLACK,
         );
+
+        // draw the color blocks in the nodes rect
+        for (i, node) in nested_nodes.iter().enumerate() {
+            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
+            if level_opt.is_some_and(|level| i > level) {
+                let thickness = w.min(h).min(10.0);
+                draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
+            } else {
+                draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+            }
+        }
     }
 }
 
-fn is_rect_clicked(rect: &Rect) -> bool {
-    is_mouse_button_pressed(MouseButton::Left) && rect.contains(Vec2::from(mouse_position()))
+fn is_rect_clicked(rect: &Rect, mouse_button: MouseButton) -> bool {
+    is_mouse_button_pressed(mouse_button) && rect.contains(Vec2::from(mouse_position()))
 }
 
 fn draw_hovered_nested_nodes(
@@ -201,7 +227,7 @@ fn draw_hovered_nested_nodes(
     treemap: &Tree,
     available: Rect,
     font_size: f32,
-    level: &mut Option<usize>
+    level: &mut Option<usize>,
 ) -> Option<Vec<TreeView>> {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
