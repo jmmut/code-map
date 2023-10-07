@@ -18,6 +18,7 @@ mod arrangements {
 }
 mod metrics {
     pub mod bytes_per_file;
+    pub mod lines;
     pub mod word_mentions;
 }
 
@@ -61,7 +62,7 @@ pub struct Cli {
     #[arg(short, long, default_value = "binary")]
     pub arrangement: String,
 
-    /// metric to plot: bytes-per-file (or b), mentions-per-word (or w).
+    /// metric to plot: bytes-per-file (or b), mentions-per-word (or w), lines-per-file (or l).
     #[arg(short, long, default_value = "bytes-per-file")]
     pub metric: String,
 
@@ -208,6 +209,12 @@ fn compute_metrics(
         "mentions-per-word" | "w" => (
             metrics::word_mentions::word_mentions(&input_folder).unwrap(),
             "mentions",
+        ),
+        "lines-per-file" | "l" => (
+            metrics::lines::lines_per_file(&input_folder)
+                .unwrap()
+                .unwrap(),
+            "lines",
         ),
         _ => panic!(
             "Unknown metric: {}. valid ones are: bytes-per-file, b, mentions-per-word, w",
