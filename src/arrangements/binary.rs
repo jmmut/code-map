@@ -19,8 +19,8 @@ fn arrange_nodes(nodes: &mut [Tree], rect: Rect) {
         arrange(&mut nodes[0], rect);
     } else if nodes.len() == 2 {
         let (_half_index, half_size_coef) = get_half_size(nodes).unwrap();
-        let aspect_ratio = rect.w / rect.h;
-        let (rect_1, rect_2) = if aspect_ratio >= 1.0 {
+        let aspect_diff = rect.w - rect.h;
+        let (rect_1, rect_2) = if aspect_diff >= 0.0 {
             divide_rectangle_horizontally(rect, half_size_coef)
         } else {
             divide_rectangle_vertically(rect, half_size_coef)
@@ -30,8 +30,8 @@ fn arrange_nodes(nodes: &mut [Tree], rect: Rect) {
         arrange(&mut nodes[1], rect_2);
     } else {
         let (half_index, half_size_coef) = get_half_size(nodes).unwrap();
-        let aspect_ratio = rect.w / rect.h;
-        let (rect_1, rect_2) = if aspect_ratio >= 1.0 {
+        let aspect_diff = rect.w - rect.h;
+        let (rect_1, rect_2) = if aspect_diff >= 0.0 {
             divide_rectangle_horizontally(rect, half_size_coef)
         } else {
             divide_rectangle_vertically(rect, half_size_coef)
@@ -47,17 +47,22 @@ fn arrange_nodes(nodes: &mut [Tree], rect: Rect) {
 fn get_half_size(nodes: &mut [Tree]) -> Result<(usize, f32), String> {
     let mut half_size = 0;
     let nodes_size = nodes.iter().map(|child| child.size()).sum::<i64>();
-    for (i, child) in nodes.iter().enumerate() {
-        half_size += child.size();
-        if half_size as f64 >= (nodes_size as f64 / 2.0) {
-            let half_size_coef = half_size as f32 / nodes_size as f32;
-            return Ok((i + 1, half_size_coef));
+    if nodes_size == 0 {
+        Ok((nodes.len()/2, 0.5))
+    } else {
+        for (i, child) in nodes.iter().enumerate() {
+            half_size += child.size();
+            if half_size as f64 >= (nodes_size as f64 / 2.0) {
+                assert_ne!(nodes_size, 0);
+                let half_size_coef = half_size as f32 / nodes_size as f32;
+                return Ok((i + 1, half_size_coef));
+            }
         }
+        Err(format!(
+            "Can't split in half. half_size: {}, nodes_size: {}, nodes: {:#?}",
+            half_size, nodes_size, nodes
+        ))
     }
-    Err(format!(
-        "Can't split in half. half_size: {}, nodes_size: {}, nodes: {:#?}",
-        half_size, nodes_size, nodes
-    ))
 }
 
 fn divide_rectangle_horizontally(rect: Rect, coef: f32) -> (Rect, Rect) {
