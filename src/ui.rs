@@ -5,7 +5,7 @@ use macroquad::math::f32;
 use macroquad::prelude::{
     clear_background, draw_rectangle, draw_rectangle_lines, draw_text, is_key_pressed,
     is_mouse_button_pressed, measure_text, mouse_position, screen_height, screen_width, KeyCode,
-    MouseButton, Rect, Vec2, BLACK, LIGHTGRAY,
+    MouseButton, Rect, Vec2, BLACK, GRAY, LIGHTGRAY,
 };
 
 use crate::tree::{Tree, TreeView};
@@ -104,18 +104,14 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
 }
 
 fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
-    if is_mouse_button_pressed(MouseButton::Left) {
-        let mouse_position = Vec2::from(mouse_position());
-        if available.contains(mouse_position) {
+    let mouse_position = Vec2::from(mouse_position());
+    if available.contains(mouse_position) {
+        if is_mouse_button_pressed(MouseButton::Left) {
             let nodes_pointed = tree.get_nested_by_position(mouse_position);
             *selected = Some(TreeView::from_nodes(&nodes_pointed));
-        } else {
-            // *selected = None;
+        } else if is_mouse_button_pressed(MouseButton::Right) {
+            *selected = None;
         }
-    }
-
-    if is_mouse_button_pressed(MouseButton::Right) {
-        *selected = None;
     }
 }
 
@@ -204,6 +200,26 @@ fn draw_nested_nodes_and_path(
             font_size,
             BLACK,
         );
+        if let Some(level) = level_opt {
+            if let Some(node) = nested_nodes.get(*level) {
+                let deepest_text = format!("{}", deepest_child.name);
+                draw_text(
+                    &deepest_text,
+                    available.x,
+                    2.0 * available.y + available.h + 1.0 * font_size,
+                    font_size,
+                    GRAY,
+                );
+                let text = format!("{}", node.name);
+                draw_text(
+                    &text,
+                    available.x,
+                    2.0 * available.y + available.h + 1.0 * font_size,
+                    font_size,
+                    BLACK,
+                );
+            }
+        }
 
         // draw the color blocks in the nodes rect
         for (i, node) in nested_nodes.iter().enumerate() {
