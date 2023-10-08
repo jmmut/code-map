@@ -174,6 +174,8 @@ fn draw_nested_nodes_and_path(
             }
             previous_width = dimensions.width;
         }
+
+        // draw_text
         let path_rect = Rect::new(
             available.x,
             2.0 * available.y + available.h,

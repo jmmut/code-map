@@ -144,6 +144,15 @@ impl Tree {
             }
         }
     }
+
+    fn compute_recursively<R, F: Fn(&Tree, R) -> R>(&self, f: F, initial: R) -> R {
+        let current_result = f(self, initial);
+        current_result
+    }
+
+    pub fn compute_squareness(&self) -> f32 {
+        5.0
+    }
     pub fn size(&self) -> i64 {
         self.size.unwrap()
     }
@@ -172,6 +181,7 @@ impl TreeView {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arrangements::binary;
 
     #[test]
     fn test_basic_size_computation() {
@@ -185,5 +195,19 @@ mod tests {
 
         assert_eq!(tree.get_or_compute_size(), 12);
         assert_eq!(tree.size, Some(12));
+    }
+
+    #[test]
+    fn test_compute_squareness() {
+        let mut tree = Tree::new_from_children(
+            "parent".to_string(),
+            vec![
+                Tree::new_from_size("child_1".to_string(), 5),
+                Tree::new_from_size("child_2".to_string(), 7),
+            ],
+        );
+        binary::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        let squareness = tree.compute_squareness();
+        assert_eq!(squareness, 0.0);
     }
 }
