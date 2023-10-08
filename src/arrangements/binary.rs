@@ -74,7 +74,7 @@ fn divide_rectangle_vertically(rect: Rect, coef: f32) -> (Rect, Rect) {
     (rect_1, rect_2)
 }
 
-fn squareness(rect: &Rect) -> f32 {
+pub fn squareness(rect: &Rect) -> f32 {
     if rect.h == 0.0 {
         0.0
     } else if rect.w <= rect.h {

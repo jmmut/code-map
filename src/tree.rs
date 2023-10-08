@@ -1,4 +1,5 @@
 use macroquad::prelude::{Rect, Vec2};
+use crate::arrangements::binary::squareness;
 
 #[derive(Debug, Clone)]
 pub struct Tree {
@@ -145,13 +146,20 @@ impl Tree {
         }
     }
 
-    fn compute_recursively<R, F: Fn(&Tree, R) -> R>(&self, f: F, initial: R) -> R {
-        let current_result = f(self, initial);
+    fn compute_recursively<R, F: Fn(&Tree, R) -> R>(&self, f: &F, initial: R) -> R {
+        let mut current_result = f(self, initial);
+        for child in &self.children {
+            current_result = child.compute_recursively(f, current_result);
+        }
         current_result
     }
 
     pub fn compute_squareness(&self) -> f32 {
-        5.0
+        let (computed, count) = self.compute_recursively(&|tree: &Tree, (accumulated_squareness, count): (f64, usize)| {
+            let s = squareness(tree.rect.as_ref().unwrap());
+            (accumulated_squareness + s as f64, count + 1)
+        }, (0.0, 0));
+        (computed / count as f64) as f32
     }
     pub fn size(&self) -> i64 {
         self.size.unwrap()
