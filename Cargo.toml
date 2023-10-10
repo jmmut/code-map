@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 macroquad = "=0.3.24"
 clap = {version = "=4.3.4", features = ["derive"]}
+ignore = "=0.4.20"
