@@ -7,8 +7,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
-    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json", "jsx", "m",
+    "c", "cc", "cpp", "cs", "css", "go", ".gitignore", "h", "hpp", "html", "java", "js", "json", "jsx", "m",
     "mm", "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml", "yaml", "yml",
+];
+
+pub const CODE_FILE_EXTENSIONS: &[&str] = &[
+    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json", "jsx", "m",
+    "mm", "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "yaml", "yml",
 ];
 
 pub fn word_mentions(folder: &PathBuf) -> Result<Tree, AnyError> {
