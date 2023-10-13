@@ -46,7 +46,6 @@ pub struct Cli {
     /// metric to plot: bytes-per-file (or b), mentions-per-word (or w), lines-per-file (or l).
     #[arg(short, long, default_value = "lines-per-file")]
     pub metric: String,
-
     // Don't filter by extension of source code files
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
@@ -79,7 +78,6 @@ async fn main() -> Result<(), AnyError> {
         metric,
         // all_extensions,
     } = Cli::parse();
-
 
     let (tree, units) = log_time!(
         compute_metrics(&input_folder, &metric, all_extensions),
