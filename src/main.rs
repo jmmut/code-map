@@ -47,9 +47,9 @@ pub struct Cli {
     #[arg(short, long, default_value = "lines-per-file")]
     pub metric: String,
 
-    /// Don't filter by extension of source code files
-    #[arg(short = 'x', long)]
-    pub all_extensions: bool,
+    // Don't filter by extension of source code files
+    // #[arg(short = 'x', long, default_value = false)]
+    // pub all_extensions: bool,
 }
 
 macro_rules! log_time {
@@ -71,13 +71,15 @@ macro_rules! log_time {
 
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
+    let all_extensions = true;
     let Cli {
         input_folder,
         padding,
         arrangement,
         metric,
-        all_extensions,
+        // all_extensions,
     } = Cli::parse();
+
 
     let (tree, units) = log_time!(
         compute_metrics(&input_folder, &metric, all_extensions),
