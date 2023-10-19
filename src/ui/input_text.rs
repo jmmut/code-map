@@ -63,24 +63,27 @@ impl<'a> InputText<'a> {
 impl<'a> InputText<'a> {
     fn interact_no_modifiers(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Space => {}
-            KeyCode::Apostrophe => {}
-            KeyCode::Comma => {}
-            KeyCode::Minus => {}
-            KeyCode::Period => {}
-            KeyCode::Slash => {}
-            KeyCode::Key0 => {}
-            KeyCode::Key1 => {}
-            KeyCode::Key2 => {}
-            KeyCode::Key3 => {}
-            KeyCode::Key4 => {}
-            KeyCode::Key5 => {}
-            KeyCode::Key6 => {}
-            KeyCode::Key7 => {}
-            KeyCode::Key8 => {}
-            KeyCode::Key9 => {}
-            KeyCode::Semicolon => {}
-            KeyCode::Equal => {}
+            KeyCode::Space => self.text.push(' '),
+            KeyCode::Apostrophe => self.text.push('\''),
+            KeyCode::Comma => self.text.push(','),
+            KeyCode::Minus => self.text.push('-'),
+            KeyCode::Period => self.text.push('.'),
+            KeyCode::Slash => self.text.push('/'),
+            KeyCode::Key0
+            | KeyCode::Key1
+            | KeyCode::Key2
+            | KeyCode::Key3
+            | KeyCode::Key4
+            | KeyCode::Key5
+            | KeyCode::Key6
+            | KeyCode::Key7
+            | KeyCode::Key8
+            | KeyCode::Key9 => {
+                self.text
+                    .push((key as u8 - KeyCode::Key0 as u8 + '0' as u8) as char);
+            }
+            KeyCode::Semicolon => self.text.push(';'),
+            KeyCode::Equal => self.text.push('='),
             KeyCode::A
             | KeyCode::B
             | KeyCode::C
@@ -110,12 +113,12 @@ impl<'a> InputText<'a> {
                 self.text
                     .push((key as u8 - KeyCode::A as u8 + 'a' as u8) as char);
             }
-            KeyCode::LeftBracket => {}
-            KeyCode::Backslash => {}
-            KeyCode::RightBracket => {}
-            KeyCode::GraveAccent => {}
-            KeyCode::World1 => {}
-            KeyCode::World2 => {}
+            KeyCode::LeftBracket => self.text.push('['),
+            KeyCode::Backslash => self.text.push('\\'),
+            KeyCode::RightBracket => self.text.push(']'),
+            KeyCode::GraveAccent => self.text.push('`'),
+            KeyCode::World1 => *self.text += "World1",
+            KeyCode::World2 => *self.text += "World2",
             KeyCode::Escape => {}
             KeyCode::Enter => {}
             KeyCode::Tab => {}
@@ -162,23 +165,26 @@ impl<'a> InputText<'a> {
             KeyCode::F23 => {}
             KeyCode::F24 => {}
             KeyCode::F25 => {}
-            KeyCode::Kp0 => {}
-            KeyCode::Kp1 => {}
-            KeyCode::Kp2 => {}
-            KeyCode::Kp3 => {}
-            KeyCode::Kp4 => {}
-            KeyCode::Kp5 => {}
-            KeyCode::Kp6 => {}
-            KeyCode::Kp7 => {}
-            KeyCode::Kp8 => {}
-            KeyCode::Kp9 => {}
-            KeyCode::KpDecimal => {}
-            KeyCode::KpDivide => {}
-            KeyCode::KpMultiply => {}
-            KeyCode::KpSubtract => {}
-            KeyCode::KpAdd => {}
+            KeyCode::Kp0
+            | KeyCode::Kp1
+            | KeyCode::Kp2
+            | KeyCode::Kp3
+            | KeyCode::Kp4
+            | KeyCode::Kp5
+            | KeyCode::Kp6
+            | KeyCode::Kp7
+            | KeyCode::Kp8
+            | KeyCode::Kp9 => {
+                self.text
+                    .push((key as u8 - KeyCode::Kp0 as u8 + '0' as u8) as char);
+            }
+            KeyCode::KpDecimal => self.text.push('.'),
+            KeyCode::KpDivide => self.text.push('/'),
+            KeyCode::KpMultiply => self.text.push('*'),
+            KeyCode::KpSubtract => self.text.push('-'),
+            KeyCode::KpAdd => self.text.push('+'),
             KeyCode::KpEnter => {}
-            KeyCode::KpEqual => {}
+            KeyCode::KpEqual => self.text.push('='),
             KeyCode::LeftShift => {}
             KeyCode::LeftControl => {}
             KeyCode::LeftAlt => {}
