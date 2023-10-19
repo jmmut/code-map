@@ -230,12 +230,16 @@ fn draw_nested_nodes_and_path(
 
         // draw the color blocks in the nodes rect
         for (i, node) in nested_nodes.iter().enumerate() {
-            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-            if level_opt.is_some_and(|level| i > level) {
-                let thickness = w.min(h).min(10.0);
-                draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
+            if let Some(node_rect) = node.rect {
+                let Rect { x, y, w, h } = round_rect(node_rect);
+                if level_opt.is_some_and(|level| i > level) {
+                    let thickness = w.min(h).min(10.0);
+                    draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
+                } else {
+                    draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+                }
             } else {
-                draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+                // a null rect can happen for empty folders or if a file has size 0
             }
         }
     }
