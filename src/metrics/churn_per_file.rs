@@ -1,4 +1,5 @@
 use git2::{Repository, Tree};
+use macroquad::prelude::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -10,10 +11,10 @@ pub struct FileChurn {
     pub count: u32,
 }
 
-pub fn print_git_churn(path :PathBuf) -> Result<(), AnyError> {
+pub fn print_git_churn(path: PathBuf) -> Result<(), AnyError> {
     let mut files_and_counts = git_churn(path)?;
     files_and_counts.sort_by(|a, b| a.count.cmp(&b.count));
-    for FileChurn{path, count} in files_and_counts {
+    for FileChurn { path, count } in files_and_counts {
         println!("{:>5} {}", count, path);
     }
     Ok(())
@@ -25,7 +26,10 @@ pub fn git_churn(path: PathBuf) -> Result<Vec<FileChurn>, AnyError> {
     revwalk.push_head()?;
 
     let mut files_changed_count = HashMap::new();
+    let mut commit_count = 0;
+    let log_period = 1000;
 
+    info!("About to process commits diffs. This may take a few seconds...");
     for oid in revwalk {
         let commit = repo.find_commit(oid?)?;
         let tree = commit.tree()?;
@@ -42,8 +46,20 @@ pub fn git_churn(path: PathBuf) -> Result<Vec<FileChurn>, AnyError> {
         if commit.parent_count() == 0 {
             add_diff(&tree, None, &repo, &mut files_changed_count)?;
         }
+
+        commit_count += 1;
+        if commit_count % log_period == 0 {
+            info!(
+                "Still processing commits... Processed commits so far: {}",
+                commit_count
+            );
+        }
     }
-    Ok(files_changed_count.into_iter().map(|(p,c) | FileChurn {path: p, count: c}).collect::<Vec<_>>())
+    info!("Total commits processed: {}", commit_count);
+    Ok(files_changed_count
+        .into_iter()
+        .map(|(path, count)| FileChurn { path, count })
+        .collect::<Vec<_>>())
 }
 
 fn add_diff(
