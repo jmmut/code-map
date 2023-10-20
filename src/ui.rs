@@ -1,3 +1,5 @@
+mod input_text;
+mod key_queue;
 pub mod searcher;
 
 use macroquad::color::{Color, BEIGE, BLUE, GREEN, LIME, PINK, PURPLE, SKYBLUE, VIOLET, WHITE};
@@ -34,6 +36,7 @@ pub struct Ui {
     font_size: f32,
     selected: Option<Vec<TreeView>>,
     level: Option<usize>,
+    keys: key_queue::OrderedEventHandler,
 }
 
 impl Ui {
@@ -65,10 +68,13 @@ impl Ui {
             searcher,
             selected: None,
             level: None,
+            keys: key_queue::OrderedEventHandler::new(),
         }
     }
 
     pub fn draw(&mut self) {
+        self.keys.capture_keys_this_frame();
+
         clear_background(LIGHTGRAY);
 
         choose_and_draw_nested_nodes(
@@ -87,7 +93,8 @@ impl Ui {
         draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
         draw_nodes_lines(&self.tree, self.available, self.font_size, 1.0, BLACK);
 
-        self.searcher.draw_search(&self.tree);
+        self.searcher
+            .draw_search(&self.tree, &self.keys.keycode_event_queue);
     }
 }
 
@@ -225,12 +232,16 @@ fn draw_nested_nodes_and_path(
 
         // draw the color blocks in the nodes rect
         for (i, node) in nested_nodes.iter().enumerate() {
-            let Rect { x, y, w, h } = round_rect(node.rect.unwrap());
-            if level_opt.is_some_and(|level| i > level) {
-                let thickness = w.min(h).min(10.0);
-                draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
+            if let Some(node_rect) = node.rect {
+                let Rect { x, y, w, h } = round_rect(node_rect);
+                if level_opt.is_some_and(|level| i > level) {
+                    let thickness = w.min(h).min(10.0);
+                    draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
+                } else {
+                    draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+                }
             } else {
-                draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
+                // a null rect can happen for empty folders or if a file has size 0
             }
         }
     }

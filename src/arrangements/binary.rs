@@ -194,14 +194,9 @@ mod tests {
             squareness_linear
         );
         println!("squareness of square::arrange: {}", squareness_binary);
-        assert!(
-            float_eq(area_binary, area_linear),
-            "{} == {}",
-            area_binary,
-            area_linear
-        );
+        assert_float_eq(area_binary, area_linear);
     }
-
+    
     #[test]
     fn test_binary_same_size() {
         let mut children = Vec::new();

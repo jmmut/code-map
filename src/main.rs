@@ -1,27 +1,12 @@
-mod tree;
-mod ui;
-
-use crate::tree::Tree;
 use clap::Parser;
 use macroquad::prelude::*;
 use std::path::PathBuf;
 
-type AnyError = Box<dyn std::error::Error>;
-
-mod arrangements {
-    pub mod binary;
-    pub mod linear;
-}
-mod metrics {
-    pub mod bytes_per_file;
-    pub mod lines;
-    pub mod word_mentions;
-}
-
-use crate::arrangements::binary;
-use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
-use crate::ui::Ui;
-use arrangements::linear;
+use code_map::arrangements::{binary, linear};
+use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
+use code_map::tree::Tree;
+use code_map::ui::Ui;
+use code_map::{metrics, AnyError};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -46,10 +31,9 @@ pub struct Cli {
     /// metric to plot: bytes-per-file (or b), mentions-per-word (or w), lines-per-file (or l).
     #[arg(short, long, default_value = "lines-per-file")]
     pub metric: String,
-
-    /// Don't filter by extension of source code files
-    #[arg(short = 'x', long)]
-    pub all_extensions: bool,
+    // Don't filter by extension of source code files
+    // #[arg(short = 'x', long, default_value = false)]
+    // pub all_extensions: bool,
 }
 
 macro_rules! log_time {
@@ -71,12 +55,13 @@ macro_rules! log_time {
 
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
+    let all_extensions = true;
     let Cli {
         input_folder,
         padding,
         arrangement,
         metric,
-        all_extensions,
+        // all_extensions,
     } = Cli::parse();
 
     let (tree, units) = log_time!(

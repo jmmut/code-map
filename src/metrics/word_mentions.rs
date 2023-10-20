@@ -6,9 +6,18 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[rustfmt::skip]
 pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
-    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html", "java", "js", "json", "jsx", "m",
-    "md", "php", "py", "rs", "sh", "swift", "ts", "tsx", "txt", "xml", "yaml", "yml",
+    "c", "cc", "cpp", "cs", "css", "go", ".gitignore", "h", "hpp", "html",
+    "java", "js", "json", "jsx", "m", "mm", "md", "pbproj", "php", "py",
+    "rs", "sh", "swift", "ts", "tsx", "txt", "xml", "yaml", "yml",
+];
+
+#[rustfmt::skip]
+pub const CODE_FILE_EXTENSIONS: &[&str] = &[
+    "c", "cc", "cpp", "cs", "css", "go", "h", "hpp", "html",
+    "java", "js", "json", "jsx", "m", "mm", "md", "pbproj", "php", "py",
+    "rs", "sh", "swift", "ts", "tsx", "yaml", "yml",
 ];
 
 pub fn word_mentions(folder: &PathBuf) -> Result<Tree, AnyError> {

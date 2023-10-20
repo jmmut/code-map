@@ -1,4 +1,6 @@
 use crate::tree::{Tree, TreeView};
+use crate::ui::input_text::InputText;
+use crate::ui::key_queue::InputCharacter;
 use macroquad::color::colors::{BLACK, GRAY, LIGHTGRAY};
 use macroquad::hash;
 use macroquad::input::{is_key_pressed, is_mouse_button_pressed, mouse_position};
@@ -7,7 +9,7 @@ use macroquad::prelude::{KeyCode, MouseButton, Vec2};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::text::{draw_text, measure_text};
 use macroquad::ui::root_ui;
-use macroquad::ui::widgets::InputText;
+use std::collections::VecDeque;
 
 pub struct Searcher {
     ui_id: u64,
@@ -53,10 +55,10 @@ impl Searcher {
         }
     }
 
-    pub fn draw_search(&mut self, treemap: &Tree) {
+    pub fn draw_search(&mut self, treemap: &Tree, keys: &VecDeque<InputCharacter>) {
         self.result_changed = false;
         let previous_search = self.search_word.clone();
-        if let Some(search_word) = self.draw_search_box() {
+        if let Some(search_word) = self.draw_search_box(keys) {
             if previous_search != search_word {
                 self.results = treemap.search(&search_word, 20);
                 self.results.sort_by(|a, b| a.len().cmp(&b.len()));
@@ -111,7 +113,7 @@ impl Searcher {
         }
     }
 
-    fn draw_search_box(&mut self) -> Option<String> {
+    fn draw_search_box(&mut self, keys: &VecDeque<InputCharacter>) -> Option<String> {
         draw_text(
             &self.tag,
             self.tag_pos.x,
@@ -120,10 +122,9 @@ impl Searcher {
             BLACK,
         );
 
-        InputText::new(self.ui_id)
-            .position(self.rect.point())
-            .size(self.rect.size())
-            .ui(&mut root_ui(), &mut self.search_word);
+        let mut input_text = InputText::new(self.rect, &mut self.search_word, keys, self.font_size);
+        input_text.interact(self.focused);
+        input_text.render();
 
         if is_key_pressed(KeyCode::F) {
             self.set_focus(true);

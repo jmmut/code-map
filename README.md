@@ -31,11 +31,15 @@ This arrangement is not great when a node has many children. The children will b
     - [x] right click to remove selection
   - [x] box to search for a file (substring)
     - [ ] fuzzy search
+    - [ ] allow upper case letters in search
   - [/] other arrangements that don't draw very thin lines
   - [ ] zoom in
+  - [ ] clicking on the same path removes the level selection
 - cli/logs
   - [x] -a --arrangement 
   - [x] -m --metric (file size, line count, code complexity, etc.)
+    - [x] --metric churn (`cargo run --example git_churn` for the data without the UI)
+    - [ ] --metric refactor (churn * line count)
   - [x] -x --all-file-extensions
   - [ ] -i --input-file (read counts from a file / stdin / sql dump)
   - [ ] -o --output-file (dump the hierarchical metrics to a file, as some metrics might be expensive to compute, e.g. code complexity)
