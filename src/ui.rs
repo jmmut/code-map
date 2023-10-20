@@ -177,7 +177,15 @@ fn draw_nested_nodes_and_path(
                 draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
             }
             if is_rect_clicked(&rect, MouseButton::Left) {
-                *level_opt = Some(i);
+                if let Some(level) = level_opt {
+                    if *level == i {
+                        *level_opt = None;
+                    } else {
+                        *level_opt = Some(i);
+                    }
+                } else {
+                    *level_opt = Some(i);
+                }
             }
             previous_width = dimensions.width;
         }

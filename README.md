@@ -34,7 +34,7 @@ This arrangement is not great when a node has many children. The children will b
     - [ ] allow upper case letters in search
   - [/] other arrangements that don't draw very thin lines
   - [ ] zoom in
-  - [ ] clicking on the same path removes the level selection
+  - [x] clicking on the same path removes the level selection
 - cli/logs
   - [x] -a --arrangement 
   - [x] -m --metric (file size, line count, code complexity, etc.)
