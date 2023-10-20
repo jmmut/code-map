@@ -26,11 +26,20 @@ fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
 }
 
 fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
-    let mut tree = Tree::new_from_children(".".to_string(), nodes);
+    let mut tree = Tree {
+        name: ".".to_string(),
+        size: None,
+        rect: None,
+        children: vec![],
+    };
+    for node in nodes {
+        tree.children.push(node);
+    }
+
     tree.get_or_compute_size();
     tree
-
     /*
+
     let tree
     for FileChurn { path, count} in file_churns {
         let node = Tree
