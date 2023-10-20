@@ -9,27 +9,6 @@ pub fn git_churn() -> Result<(), AnyError> {
     revwalk.push_head()?;
 
     let mut files_changed_count = HashMap::new();
-    fn add_file(path: String, files_changed_count: &mut HashMap<String, u32>) {
-        let count = files_changed_count.entry(path).or_insert(0);
-        *count += 1;
-    }
-
-    fn add_diff(
-        commit_tree: &Tree,
-        parent_tree: Option<&Tree>,
-        repo: &Repository,
-        files_changed_count: &mut HashMap<String, u32>,
-    ) -> Result<(), AnyError> {
-        let mut diff = repo.diff_tree_to_tree(parent_tree, Some(commit_tree), None)?;
-        diff.find_similar(None)?;
-        for delta in diff.deltas() {
-            let new_file = delta.new_file();
-            let bytes = new_file.path_bytes().unwrap();
-            let path_string = String::from_utf8(bytes.to_vec())?;
-            add_file(path_string, files_changed_count);
-        }
-        Ok(())
-    }
 
     for oid in revwalk {
         let commit = repo.find_commit(oid?)?;
@@ -51,6 +30,28 @@ pub fn git_churn() -> Result<(), AnyError> {
         println!("{} {}", path, count);
     }
     Ok(())
+}
+
+fn add_diff(
+    commit_tree: &Tree,
+    parent_tree: Option<&Tree>,
+    repo: &Repository,
+    files_changed_count: &mut HashMap<String, u32>,
+) -> Result<(), AnyError> {
+    let mut diff = repo.diff_tree_to_tree(parent_tree, Some(commit_tree), None)?;
+    diff.find_similar(None)?;
+    for delta in diff.deltas() {
+        let new_file = delta.new_file();
+        let bytes = new_file.path_bytes().unwrap();
+        let path_string = String::from_utf8(bytes.to_vec())?;
+        add_file(path_string, files_changed_count);
+    }
+    Ok(())
+}
+
+fn add_file(path: String, files_changed_count: &mut HashMap<String, u32>) {
+    let count = files_changed_count.entry(path).or_insert(0);
+    *count += 1;
 }
 
 #[cfg(test)]
