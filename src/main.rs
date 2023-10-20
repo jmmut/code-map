@@ -133,7 +133,7 @@ fn compute_metrics(
         ),
         Metrics::ChurnPerFile => (
             metrics::churn_per_file::git_churn_per_file(input_folder.clone()).unwrap(),
-            "commits",
+            "modifications (commits per file)",
         ),
     };
     (tree, units)

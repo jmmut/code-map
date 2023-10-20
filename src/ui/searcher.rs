@@ -1,15 +1,15 @@
-use crate::tree::{Tree, TreeView};
-use crate::ui::input_text::InputText;
-use crate::ui::key_queue::InputCharacter;
+use std::collections::VecDeque;
+
 use macroquad::color::colors::{BLACK, GRAY, LIGHTGRAY};
-use macroquad::hash;
 use macroquad::input::{is_key_pressed, is_mouse_button_pressed, mouse_position};
 use macroquad::prelude::Rect;
 use macroquad::prelude::{KeyCode, MouseButton, Vec2};
 use macroquad::shapes::{draw_rectangle, draw_rectangle_lines};
 use macroquad::text::{draw_text, measure_text};
-use macroquad::ui::root_ui;
-use std::collections::VecDeque;
+
+use crate::tree::{Tree, TreeView};
+use crate::ui::input_text::InputText;
+use crate::ui::key_queue::InputCharacter;
 
 pub struct Searcher {
     tag: String,

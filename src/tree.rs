@@ -221,6 +221,12 @@ impl TreeView {
     }
 }
 
+impl PartialEq for TreeView {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.size == other.size
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

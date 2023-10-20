@@ -115,7 +115,16 @@ fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Ve
     if available.contains(mouse_position) {
         if is_mouse_button_pressed(MouseButton::Left) {
             let nodes_pointed = tree.get_nested_by_position(mouse_position);
-            *selected = Some(TreeView::from_nodes(&nodes_pointed));
+            let new_nodes = TreeView::from_nodes(&nodes_pointed);
+            if let Some(selected_nodes) = selected {
+                if *selected_nodes == new_nodes {
+                    *selected = None;
+                } else {
+                    *selected = Some(new_nodes);
+                }
+            } else {
+                *selected = Some(new_nodes);
+            }
         } else if is_mouse_button_pressed(MouseButton::Right) {
             *selected = None;
         }
@@ -137,7 +146,7 @@ fn choose_and_draw_nested_nodes(
     } else if let Some(selected_nodes) = &selected {
         draw_nested_nodes_and_path(units, available, font_size, &selected_nodes, level);
     } else {
-        *selected = draw_hovered_nested_nodes(units, &tree, available, font_size, level);
+        draw_hovered_nested_nodes(units, &tree, available, font_size, level);
     }
     if is_key_pressed(KeyCode::Backspace) {
         if let Some(nested_nodes) = selected {
@@ -190,7 +199,7 @@ fn draw_nested_nodes_and_path(
             previous_width = dimensions.width;
         }
 
-        // draw_text
+        // draw the text of the node name and the units
         let path_rect = Rect::new(
             available.x,
             2.0 * available.y + available.h,
@@ -265,7 +274,7 @@ fn draw_hovered_nested_nodes(
     available: Rect,
     font_size: f32,
     level: &mut Option<usize>,
-) -> Option<Vec<TreeView>> {
+) {
     let mouse_position = Vec2::from(mouse_position());
     if available.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
@@ -276,13 +285,7 @@ fn draw_hovered_nested_nodes(
             &TreeView::from_nodes(&nodes_pointed),
             level,
         );
-        if is_mouse_button_pressed(MouseButton::Left) {
-            // let deepest_child = nodes_pointed.last().unwrap();
-            // debug!("{:#?}", deepest_child);
-            return Some(TreeView::from_nodes(&nodes_pointed));
-        }
     }
-    return None;
 }
 
 /// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.
