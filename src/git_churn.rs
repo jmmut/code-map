@@ -8,7 +8,7 @@ use crate::AnyError;
 /// Represents a file and how many times it was changed in the whole git repo history
 pub struct FileChurn {
     pub path: String,
-    pub count: u32,
+    pub count: i32,
 }
 
 pub fn print_git_churn(path: PathBuf) -> Result<(), AnyError> {
@@ -66,7 +66,7 @@ fn add_diff(
     commit_tree: &Tree,
     parent_tree: Option<&Tree>,
     repo: &Repository,
-    files_changed_count: &mut HashMap<String, u32>,
+    files_changed_count: &mut HashMap<String, i32>,
 ) -> Result<(), AnyError> {
     let mut diff = repo.diff_tree_to_tree(parent_tree, Some(commit_tree), None)?;
     diff.find_similar(None)?;
@@ -79,7 +79,7 @@ fn add_diff(
     Ok(())
 }
 
-fn add_file(path: String, files_changed_count: &mut HashMap<String, u32>) {
+fn add_file(path: String, files_changed_count: &mut HashMap<String, i32>) {
     let count = files_changed_count.entry(path).or_insert(0);
     *count += 1;
 }

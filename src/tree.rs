@@ -41,6 +41,16 @@ impl Tree {
         node
     }
 
+    #[cfg(test)]
+    pub fn new_from_computed_size(name: String, size: i64, children: Vec<Tree>) -> Tree {
+        Tree {
+            name,
+            size: Some(size),
+            rect: None,
+            children,
+        }
+    }
+
     pub fn get_or_compute_size(&mut self) -> i64 {
         if let Some(size) = self.size {
             size
