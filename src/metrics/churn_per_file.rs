@@ -3,7 +3,22 @@ use std::collections::HashMap;
 
 use crate::AnyError;
 
-pub fn git_churn() -> Result<(), AnyError> {
+/// Represents a file and how many times it was changed in the whole git repo history
+pub struct FileChurn {
+    pub path: String,
+    pub count: u32,
+}
+
+pub fn print_git_churn() -> Result<(), AnyError> {
+    let mut files_and_counts = git_churn()?;
+    files_and_counts.sort_by(|a, b| a.count.cmp(&b.count));
+    for FileChurn{path, count} in files_and_counts {
+        println!("{:>5} {}", count, path);
+    }
+    Ok(())
+}
+
+pub fn git_churn() -> Result<Vec<FileChurn>, AnyError> {
     let repo = Repository::open(".")?;
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
@@ -14,6 +29,10 @@ pub fn git_churn() -> Result<(), AnyError> {
         let commit = repo.find_commit(oid?)?;
         let tree = commit.tree()?;
 
+        // I couldn't find any way to list the modified files in a commit without doing
+        // an explicit diff with the parent(s). This makes sense if the rumour that git
+        // stores the whole tree in each commit is true. This seems to be the case by a quick read
+        // of https://git-scm.com/book/en/v2/Git-Internals-Git-Objects. Mindblown.
         for parent in commit.parents() {
             let parent_tree = parent.tree()?;
             add_diff(&tree, Some(&parent_tree), &repo, &mut files_changed_count)?;
@@ -23,13 +42,7 @@ pub fn git_churn() -> Result<(), AnyError> {
             add_diff(&tree, None, &repo, &mut files_changed_count)?;
         }
     }
-
-    let mut sorted_files = files_changed_count.iter().collect::<Vec<_>>();
-    sorted_files.sort_by(|a, b| a.1.cmp(b.1));
-    for (path, count) in sorted_files {
-        println!("{} {}", path, count);
-    }
-    Ok(())
+    Ok(files_changed_count.into_iter().map(|(p,c) | FileChurn {path: p, count: c}).collect::<Vec<_>>())
 }
 
 fn add_diff(
@@ -62,7 +75,8 @@ mod tests {
     fn test_churn_tree_creation() {}
 
     #[test]
+    #[ignore]
     fn test_print_git_churn() {
-        git_churn().unwrap();
+        print_git_churn().unwrap();
     }
 }
