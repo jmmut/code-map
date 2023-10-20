@@ -1,6 +1,7 @@
-use macroquad::prelude::info;
-use std::collections::HashMap;
+use std::borrow::BorrowMut;
+use std::ops::{DerefMut, Range};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use crate::git_churn::{git_churn, FileChurn};
 use crate::tree::Tree;
@@ -26,42 +27,72 @@ fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
 }
 
 fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
-    let mut tree = Tree {
-        name: ".".to_string(),
+    // let mut trees = Rc::new(Vec::<Tree>::new());
+    // let mut trees = Vec::<Tree>::new();
+    let mut wrapping_tree = Tree {
+        name: "".to_string(),
         size: None,
         rect: None,
         children: vec![],
     };
     for node in nodes {
-        tree.children.push(node);
-    }
+        let path = node.name.split("/").collect::<Vec<&str>>();
+        let mut path_level_iter = path.iter();
+        let mut path_level = path_level_iter.next().unwrap().to_string();
+        let mut trees_current_level: *mut Tree = &mut wrapping_tree;
+        loop {
+            assert_ne!(path_level, "");
 
-    tree.get_or_compute_size();
-    tree
-    /*
-
-    let tree
-    for FileChurn { path, count} in file_churns {
-        let node = Tree
-        let mut path = path.split("/").collect::<Vec<&str>>();
-        let mut current_node = &mut tree;
-        for subfolder in path {
-            assert_ne!(subfolder, "");
-            if let Some(child) = current_node.children.iter_mut().find(|c| c.name == name) {
-                current_node = child;
+            if let Some(existing_path_level) =
+                get_subtree(&mut path_level, unsafe { &mut *trees_current_level })
+            {
+                trees_current_level = existing_path_level;
             } else {
-                let new_node = Tree::new_from_children(name.to_string(), Vec::new());
-                current_node.children.push(new_node);
-                current_node = current_node.children.last_mut().unwrap();
+                if node.name == path_level {
+                    let new_node = Tree::new_from_size(path_level.to_string(), node.size.unwrap());
+                    unsafe {
+                        (*trees_current_level).children.push(new_node);
+                    }
+                } else {
+                    let new_node = Tree {
+                        name: path_level.to_string(),
+                        size: None,
+                        rect: None,
+                        children: vec![],
+                    };
+                    unsafe {
+                        (*trees_current_level).children.push(new_node);
+                    }
+                }
+
+                unsafe {
+                    trees_current_level = (*trees_current_level).children.last_mut().unwrap();
+                }
+            }
+
+            if let Some(next_path_level) = path_level_iter.next() {
+                path_level += "/";
+                path_level += next_path_level;
+            } else {
+                break;
             }
         }
-        current_node.size = count;
     }
+    assert_eq!(wrapping_tree.children.len(), 1);
+    let mut tree = wrapping_tree.children.pop().unwrap();
     tree.get_or_compute_size();
-    info!("tree: {:?}", tree);
-    Ok(Some(tree))
+    tree
+}
 
-     */
+fn get_subtree<'a>(path_level: &String, trees_current_level: &mut Tree) -> Option<*mut Tree> {
+    let mut found_subtree: Option<*mut Tree> = None;
+    for child in trees_current_level.children.iter_mut() {
+        if child.name == *path_level {
+            found_subtree = Some(child);
+            break;
+        }
+    }
+    found_subtree
 }
 
 #[cfg(test)]
