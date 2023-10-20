@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use crate::AnyError;
-use crate::git_churn::{FileChurn, git_churn};
+use crate::git_churn::{git_churn, FileChurn};
 use crate::tree::Tree;
+use crate::AnyError;
 
 pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
     let file_churns = git_churn(folder.clone())?;
@@ -37,7 +37,11 @@ fn nodes_to_tree(nodes: Vec<Tree>, folder: PathBuf) -> Tree {
         top_level_folder += hierarchy_delimiter;
     }
     for mut node in nodes {
-        let path = node.name.split(hierarchy_delimiter).map(|s|s.to_string()).collect::<Vec<String>>();
+        let path = node
+            .name
+            .split(hierarchy_delimiter)
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
         node.name = top_level_folder.clone() + &node.name;
         let mut path_level_iter = path.iter();
         let mut path_level = top_level_folder.clone() + path_level_iter.next().unwrap();

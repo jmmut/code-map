@@ -32,7 +32,6 @@ pub struct Cli {
     /// metric to plot
     #[arg(short, long, default_value = "churn-per-file")]
     pub metric: Metrics,
-
     // Don't filter by extension of source code files
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,

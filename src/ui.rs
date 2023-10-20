@@ -82,7 +82,7 @@ impl Ui {
             &self.units,
             self.available,
             self.font_size,
-            &self.searcher,
+            &mut self.searcher,
             &mut self.selected,
             &mut self.level,
         );
@@ -127,7 +127,7 @@ fn choose_and_draw_nested_nodes(
     units: &str,
     available: Rect,
     font_size: f32,
-    searcher: &Searcher,
+    searcher: &mut Searcher,
     selected: &mut Option<Vec<TreeView>>,
     level: &mut Option<usize>,
 ) {
