@@ -1,11 +1,8 @@
-use std::borrow::BorrowMut;
-use std::ops::{DerefMut, Range};
 use std::path::PathBuf;
-use std::rc::Rc;
 
-use crate::git_churn::{git_churn, FileChurn};
-use crate::tree::Tree;
 use crate::AnyError;
+use crate::git_churn::{FileChurn, git_churn};
+use crate::tree::Tree;
 
 pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
     let file_churns = git_churn(folder.clone())?;
@@ -13,9 +10,9 @@ pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
     tree
 }
 
-fn file_churns_to_tree(root_path: PathBuf, file_churns: Vec<FileChurn>) -> Result<Tree, AnyError> {
+fn file_churns_to_tree(folder: PathBuf, file_churns: Vec<FileChurn>) -> Result<Tree, AnyError> {
     let nodes = file_churns_to_nodes(file_churns);
-    let tree = nodes_to_tree(nodes);
+    let tree = nodes_to_tree(nodes, folder);
     Ok(tree)
 }
 
@@ -26,20 +23,24 @@ fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
         .collect::<Vec<Tree>>()
 }
 
-fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
-    // let mut trees = Rc::new(Vec::<Tree>::new());
-    // let mut trees = Vec::<Tree>::new();
+fn nodes_to_tree(nodes: Vec<Tree>, folder: PathBuf) -> Tree {
+    let mut top_level_folder = folder.to_string_lossy().to_string();
+
     let mut wrapping_tree = Tree {
-        name: "".to_string(),
+        name: top_level_folder.clone(),
         size: None,
         rect: None,
         children: vec![],
     };
     let hierarchy_delimiter = "/";
-    for node in nodes {
-        let path = node.name.split(hierarchy_delimiter).collect::<Vec<&str>>();
+    if !top_level_folder.ends_with(hierarchy_delimiter) {
+        top_level_folder += hierarchy_delimiter;
+    }
+    for mut node in nodes {
+        let path = node.name.split(hierarchy_delimiter).map(|s|s.to_string()).collect::<Vec<String>>();
+        node.name = top_level_folder.clone() + &node.name;
         let mut path_level_iter = path.iter();
-        let mut path_level = path_level_iter.next().unwrap().to_string();
+        let mut path_level = top_level_folder.clone() + path_level_iter.next().unwrap();
         let mut trees_current_level: *mut Tree = &mut wrapping_tree;
         loop {
             assert_ne!(path_level, "");
@@ -56,7 +57,7 @@ fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
                     }
                 } else {
                     let new_node = Tree {
-                        name: path_level.to_string(),
+                        name: path_level.clone(),
                         size: None,
                         rect: None,
                         children: vec![],
@@ -79,10 +80,8 @@ fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
             }
         }
     }
-    assert_eq!(wrapping_tree.children.len(), 1);
-    let mut tree = wrapping_tree.children.pop().unwrap();
-    tree.get_or_compute_size();
-    tree
+    wrapping_tree.get_or_compute_size();
+    wrapping_tree
 }
 
 fn get_subtree<'a>(path_level: &String, trees_current_level: &mut Tree) -> Option<*mut Tree> {
@@ -115,10 +114,10 @@ mod tests {
     fn test_churn_tree_creation() {
         #[rustfmt::skip]
         let file_churns = vec![
-            FileChurn { path: "./src/arrangements/binary.rs".into(), count: 1 },
-            FileChurn { path: "./src/metrics/word_mentions.rs".into(), count: 2 },
-            FileChurn { path: "./src/main.rs".into(), count: 3 },
-            FileChurn { path: "./src/metrics/bytes_per_file.rs".into(), count: 4 },
+            FileChurn { path: "src/arrangements/binary.rs".into(), count: 1 },
+            FileChurn { path: "src/metrics/word_mentions.rs".into(), count: 2 },
+            FileChurn { path: "src/main.rs".into(), count: 3 },
+            FileChurn { path: "src/metrics/bytes_per_file.rs".into(), count: 4 },
         ];
 
         let tree = file_churns_to_tree(".".into(), file_churns).unwrap();
@@ -143,8 +142,8 @@ mod tests {
     fn test_churn_tree_creation_basic() {
         #[rustfmt::skip]
         let file_churns = vec![
-            FileChurn { path: "./main.rs".into(), count: 1 },
-            FileChurn { path: "./lib.rs".into(), count: 2 },
+            FileChurn { path: "main.rs".into(), count: 1 },
+            FileChurn { path: "lib.rs".into(), count: 2 },
         ];
 
         let tree = file_churns_to_tree(".".into(), file_churns).unwrap();
@@ -160,18 +159,38 @@ mod tests {
     #[test]
     fn test_churn_tree_creation_one_level_deep() {
         #[rustfmt::skip]
-        let file_churns = vec![
-            FileChurn { path: "./src/main.rs".into(), count: 1 },
-            FileChurn { path: "./src/lib.rs".into(), count: 2 },
+            let file_churns = vec![
+            FileChurn { path: "src/main.rs".into(), count: 1 },
+            FileChurn { path: "src/lib.rs".into(), count: 2 },
         ];
 
         let tree = file_churns_to_tree(".".into(), file_churns).unwrap();
 
         #[rustfmt::skip]
-        let expected = Tree::new_from_computed_size(".".into(), 3, vec![
+            let expected = Tree::new_from_computed_size(".".into(), 3, vec![
             Tree::new_from_computed_size("./src".into(), 3, vec![
                 Tree::new_from_size("./src/main.rs".into(), 1),
                 Tree::new_from_size("./src/lib.rs".into(), 2),
+            ]),
+        ]);
+        assert_trees_eq(&tree, &expected);
+    }
+
+    #[test]
+    fn test_churn_tree_creation_complex_top_level() {
+        #[rustfmt::skip]
+            let file_churns = vec![
+            FileChurn { path: "src/main.rs".into(), count: 1 },
+            FileChurn { path: "src/lib.rs".into(), count: 2 },
+        ];
+
+        let tree = file_churns_to_tree("./src/../".into(), file_churns).unwrap();
+
+        #[rustfmt::skip]
+            let expected = Tree::new_from_computed_size("./src/../".into(), 3, vec![
+            Tree::new_from_computed_size("./src/../src".into(), 3, vec![
+                Tree::new_from_size("./src/../src/main.rs".into(), 1),
+                Tree::new_from_size("./src/../src/lib.rs".into(), 2),
             ]),
         ]);
         assert_trees_eq(&tree, &expected);

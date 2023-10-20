@@ -1,9 +1,12 @@
+use clap::builder::PossibleValue;
+use clap::ValueEnum;
+
 pub mod bytes_per_file;
 pub mod churn_per_file;
 pub mod lines;
 pub mod word_mentions;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Metrics {
     BytesPerFile,
     ChurnPerFile,
@@ -11,31 +14,24 @@ pub enum Metrics {
     WordMentions,
 }
 
-const METRIC_NAMES: [(Metrics, &str); 8] = [
-    (Metrics::BytesPerFile, "bytes-per-file"),
-    (Metrics::BytesPerFile, "b"),
-    (Metrics::ChurnPerFile, "churn-per-file"),
-    (Metrics::ChurnPerFile, "c"),
-    (Metrics::LinesPerFile, "lines-per-file"),
-    (Metrics::LinesPerFile, "l"),
-    (Metrics::WordMentions, "word-mentions"),
-    (Metrics::WordMentions, "w"),
+const METRICS: [Metrics; 4] = [
+    Metrics::BytesPerFile,
+    Metrics::ChurnPerFile,
+    Metrics::LinesPerFile,
+    Metrics::WordMentions,
 ];
 
-impl Metrics {
-    pub fn from_str(s: &str) -> Option<Self> {
-        for (metric, name) in METRIC_NAMES.iter() {
-            if s == *name {
-                return Some(*metric);
-            }
-        }
-        return None;
+impl ValueEnum for Metrics {
+    fn value_variants<'a>() -> &'a [Self] {
+        &METRICS
     }
-    pub fn metric_names() -> Vec<&'static str> {
-        let mut names = Vec::new();
-        for (_, name) in METRIC_NAMES.iter() {
-            names.push(*name);
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        match self {
+            Metrics::BytesPerFile => Some(PossibleValue::new("bytes-per-file").alias("b")),
+            Metrics::ChurnPerFile => Some(PossibleValue::new("churn-per-file").alias("c")),
+            Metrics::LinesPerFile => Some(PossibleValue::new("lines-per-file").alias("l")),
+            Metrics::WordMentions => Some(PossibleValue::new("word-mentions").alias("w")),
         }
-        names
     }
 }

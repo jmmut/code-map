@@ -29,9 +29,10 @@ pub struct Cli {
     #[arg(short, long, default_value = "binary")]
     pub arrangement: String,
 
-    /// metric to plot: bytes-per-file (or b), mentions-per-word (or w), lines-per-file (or l).
-    #[arg(short, long, default_value = "lines-per-file")]
-    pub metric: String,
+    /// metric to plot
+    #[arg(short, long, default_value = "churn-per-file")]
+    pub metric: Metrics,
+
     // Don't filter by extension of source code files
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
@@ -104,11 +105,11 @@ fn window_conf() -> Conf {
 
 fn compute_metrics(
     input_folder: &PathBuf,
-    metric: &str,
+    metric: &Metrics,
     all_extensions: bool,
 ) -> (Tree, &'static str) {
-    let (tree, units) = match Metrics::from_str(metric) {
-        Some(Metrics::BytesPerFile) => (
+    let (tree, units) = match metric {
+        Metrics::BytesPerFile => (
             if all_extensions {
                 metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap()
             } else {
@@ -121,24 +122,19 @@ fn compute_metrics(
             },
             "bytes",
         ),
-        Some(Metrics::WordMentions) => (
+        Metrics::WordMentions => (
             metrics::word_mentions::word_mentions(&input_folder).unwrap(),
             "mentions",
         ),
-        Some(Metrics::LinesPerFile) => (
+        Metrics::LinesPerFile => (
             metrics::lines::lines_per_file(&input_folder)
                 .unwrap()
                 .unwrap(),
             "lines",
         ),
-        Some(Metrics::ChurnPerFile) => (
-            metrics::churn_per_file::git_churn_per_file(input_folder).unwrap(),
+        Metrics::ChurnPerFile => (
+            metrics::churn_per_file::git_churn_per_file(input_folder.clone()).unwrap(),
             "commits",
-        ),
-        None => panic!(
-            "Unknown metric: {}. valid ones are: {}",
-            metric,
-            Metrics::metric_names().join(", ")
         ),
     };
     (tree, units)
