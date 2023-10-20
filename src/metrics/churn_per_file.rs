@@ -35,8 +35,9 @@ fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
         rect: None,
         children: vec![],
     };
+    let hierarchy_delimiter = "/";
     for node in nodes {
-        let path = node.name.split("/").collect::<Vec<&str>>();
+        let path = node.name.split(hierarchy_delimiter).collect::<Vec<&str>>();
         let mut path_level_iter = path.iter();
         let mut path_level = path_level_iter.next().unwrap().to_string();
         let mut trees_current_level: *mut Tree = &mut wrapping_tree;
@@ -71,7 +72,7 @@ fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
             }
 
             if let Some(next_path_level) = path_level_iter.next() {
-                path_level += "/";
+                path_level += hierarchy_delimiter;
                 path_level += next_path_level;
             } else {
                 break;

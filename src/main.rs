@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use code_map::arrangements::{binary, linear};
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
+use code_map::metrics::Metrics;
 use code_map::tree::Tree;
 use code_map::ui::Ui;
 use code_map::{metrics, AnyError};
@@ -106,8 +107,8 @@ fn compute_metrics(
     metric: &str,
     all_extensions: bool,
 ) -> (Tree, &'static str) {
-    let (tree, units) = match metric {
-        "bytes-per-file" | "b" => (
+    let (tree, units) = match Metrics::from_str(metric) {
+        Some(Metrics::BytesPerFile) => (
             if all_extensions {
                 metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap()
             } else {
@@ -120,19 +121,24 @@ fn compute_metrics(
             },
             "bytes",
         ),
-        "mentions-per-word" | "w" => (
+        Some(Metrics::WordMentions) => (
             metrics::word_mentions::word_mentions(&input_folder).unwrap(),
             "mentions",
         ),
-        "lines-per-file" | "l" => (
+        Some(Metrics::LinesPerFile) => (
             metrics::lines::lines_per_file(&input_folder)
                 .unwrap()
                 .unwrap(),
             "lines",
         ),
-        _ => panic!(
-            "Unknown metric: {}. valid ones are: bytes-per-file, b, mentions-per-word, w",
-            metric
+        Some(Metrics::ChurnPerFile) => (
+            metrics::churn_per_file::git_churn_per_file(input_folder).unwrap(),
+            "commits",
+        ),
+        None => panic!(
+            "Unknown metric: {}. valid ones are: {}",
+            metric,
+            Metrics::metric_names().join(", ")
         ),
     };
     (tree, units)
