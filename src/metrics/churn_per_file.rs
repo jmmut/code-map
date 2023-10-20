@@ -2,9 +2,9 @@ use macroquad::prelude::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::git_churn::{FileChurn, git_churn};
-use crate::AnyError;
+use crate::git_churn::{git_churn, FileChurn};
 use crate::tree::Tree;
+use crate::AnyError;
 
 pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
     let file_churns = git_churn(folder.clone())?;
@@ -19,9 +19,10 @@ fn file_churns_to_tree(root_path: PathBuf, file_churns: Vec<FileChurn>) -> Resul
 }
 
 fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
-    file_churns.into_iter().map(|FileChurn{path, count}| {
-        Tree::new_from_size(path, count as i64)
-    }).collect::<Vec<Tree>>()
+    file_churns
+        .into_iter()
+        .map(|FileChurn { path, count }| Tree::new_from_size(path, count as i64))
+        .collect::<Vec<Tree>>()
 }
 
 fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
@@ -58,6 +59,17 @@ fn nodes_to_tree(nodes: Vec<Tree>) -> Tree {
 mod tests {
     use super::*;
 
+    fn assert_trees_eq(left: &Tree, right: &Tree) {
+        // using this exact message makes CLion show a great diff UI in the test runner.
+        // this is probably brittle and will stop working in the future but for now it's great :D
+        assert!(
+            left.recursive_equals(right),
+            "assertion failed: `(left == right)`\n  left: `{:#?}`,\n right: `{:#?}`",
+            left,
+            right
+        );
+    }
+
     #[test]
     fn test_churn_tree_creation() {
         #[rustfmt::skip]
@@ -83,7 +95,6 @@ mod tests {
                 Tree::new_from_computed_size("./src/main.rs".into(), 3, vec![]),
             ]),
         ]);
-
-        // assert!(tree.recursive_equals(expected), "{:?} != {:?}", tree, expected);
+        assert_trees_eq(&tree, &expected);
     }
 }

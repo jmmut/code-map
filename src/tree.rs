@@ -1,5 +1,5 @@
-use macroquad::prelude::{Rect, Vec2};
 use crate::arrangements::binary::squareness;
+use macroquad::prelude::{Rect, Vec2};
 
 #[derive(Debug, Clone)]
 pub struct Tree {
@@ -165,12 +165,37 @@ impl Tree {
     }
 
     pub fn compute_squareness(&self) -> f32 {
-        let (computed, count) = self.compute_recursively(&|tree: &Tree, (accumulated_squareness, count): (f64, usize)| {
-            let s = squareness(tree.rect.as_ref().unwrap());
-            (accumulated_squareness + s as f64, count + 1)
-        }, (0.0, 0));
+        let (computed, count) = self.compute_recursively(
+            &|tree: &Tree, (accumulated_squareness, count): (f64, usize)| {
+                let s = squareness(tree.rect.as_ref().unwrap());
+                (accumulated_squareness + s as f64, count + 1)
+            },
+            (0.0, 0),
+        );
         (computed / count as f64) as f32
     }
+
+    pub fn recursive_equals(&self, other: &Tree) -> bool {
+        return if self.name != other.name {
+            false
+        } else if self.size != other.size {
+            false
+        } else if self.children.len() != other.children.len() {
+            false
+        } else {
+            self.recursive_compare_children(other)
+        };
+    }
+
+    fn recursive_compare_children(&self, other: &Tree) -> bool {
+        for (self_child, other_child) in self.children.iter().zip(other.children.iter()) {
+            if !self_child.recursive_equals(other_child) {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn size(&self) -> i64 {
         self.size.unwrap()
     }

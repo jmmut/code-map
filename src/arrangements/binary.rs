@@ -48,7 +48,7 @@ fn get_half_size(nodes: &mut [Tree]) -> Result<(usize, f32), String> {
     let mut half_size = 0;
     let nodes_size = nodes.iter().map(|child| child.size()).sum::<i64>();
     if nodes_size == 0 {
-        Ok((nodes.len()/2, 0.5))
+        Ok((nodes.len() / 2, 0.5))
     } else {
         for (i, child) in nodes.iter().enumerate() {
             half_size += child.size();
@@ -196,7 +196,7 @@ mod tests {
         println!("squareness of square::arrange: {}", squareness_binary);
         assert_float_eq(area_binary, area_linear);
     }
-    
+
     #[test]
     fn test_binary_same_size() {
         let mut children = Vec::new();

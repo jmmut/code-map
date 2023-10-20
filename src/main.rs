@@ -76,7 +76,6 @@ async fn main() -> Result<(), AnyError> {
     );
     log_time!(log_counts(&ui.tree));
 
-
     while should_continue() {
         ui.draw();
         next_frame().await
@@ -165,5 +164,8 @@ fn log_counts(treemap: &Tree) {
             visible_counts.leafs, visible_counts.total
         );
     }
-    info!("The arrangement has a squareness of {}", treemap.compute_squareness());
+    info!(
+        "The arrangement has a squareness of {}",
+        treemap.compute_squareness()
+    );
 }
