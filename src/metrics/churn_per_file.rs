@@ -86,13 +86,51 @@ mod tests {
         let expected = Tree::new_from_computed_size(".".into(), 10, vec![
             Tree::new_from_computed_size("./src".into(), 10, vec![
                 Tree::new_from_computed_size("./src/arrangements".into(), 1, vec![
-                    Tree::new_from_computed_size("./src/arrangements/binary.rs".into(), 1, vec![]),
+                    Tree::new_from_size("./src/arrangements/binary.rs".into(), 1),
                 ]),
                 Tree::new_from_computed_size("./src/metrics".into(), 6, vec![
-                    Tree::new_from_computed_size("./src/metrics/word_mentions.rs".into(), 2, vec![]),
-                    Tree::new_from_computed_size("./src/metrics/bytes_per_file.rs".into(), 4, vec![]),
+                    Tree::new_from_size("./src/metrics/word_mentions.rs".into(), 2),
+                    Tree::new_from_size("./src/metrics/bytes_per_file.rs".into(), 4),
                 ]),
-                Tree::new_from_computed_size("./src/main.rs".into(), 3, vec![]),
+                Tree::new_from_size("./src/main.rs".into(), 3),
+            ]),
+        ]);
+        assert_trees_eq(&tree, &expected);
+    }
+
+    #[test]
+    fn test_churn_tree_creation_basic() {
+        #[rustfmt::skip]
+        let file_churns = vec![
+            FileChurn { path: "./main.rs".into(), count: 1 },
+            FileChurn { path: "./lib.rs".into(), count: 2 },
+        ];
+
+        let tree = file_churns_to_tree(".".into(), file_churns).unwrap();
+
+        #[rustfmt::skip]
+        let expected = Tree::new_from_computed_size(".".into(), 3, vec![
+            Tree::new_from_size("./main.rs".into(), 1),
+            Tree::new_from_size("./lib.rs".into(), 2),
+        ]);
+        assert_trees_eq(&tree, &expected);
+    }
+
+    #[test]
+    fn test_churn_tree_creation_one_level_deep() {
+        #[rustfmt::skip]
+        let file_churns = vec![
+            FileChurn { path: "./src/main.rs".into(), count: 1 },
+            FileChurn { path: "./src/lib.rs".into(), count: 2 },
+        ];
+
+        let tree = file_churns_to_tree(".".into(), file_churns).unwrap();
+
+        #[rustfmt::skip]
+        let expected = Tree::new_from_computed_size(".".into(), 3, vec![
+            Tree::new_from_computed_size("./src".into(), 3, vec![
+                Tree::new_from_size("./src/main.rs".into(), 1),
+                Tree::new_from_size("./src/lib.rs".into(), 2),
             ]),
         ]);
         assert_trees_eq(&tree, &expected);
