@@ -1,5 +1,6 @@
 use git2::{Repository, Tree};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::AnyError;
 
@@ -9,8 +10,8 @@ pub struct FileChurn {
     pub count: u32,
 }
 
-pub fn print_git_churn() -> Result<(), AnyError> {
-    let mut files_and_counts = git_churn()?;
+pub fn print_git_churn(path :PathBuf) -> Result<(), AnyError> {
+    let mut files_and_counts = git_churn(path)?;
     files_and_counts.sort_by(|a, b| a.count.cmp(&b.count));
     for FileChurn{path, count} in files_and_counts {
         println!("{:>5} {}", count, path);
@@ -18,8 +19,8 @@ pub fn print_git_churn() -> Result<(), AnyError> {
     Ok(())
 }
 
-pub fn git_churn() -> Result<Vec<FileChurn>, AnyError> {
-    let repo = Repository::open(".")?;
+pub fn git_churn(path: PathBuf) -> Result<Vec<FileChurn>, AnyError> {
+    let repo = Repository::open(path)?;
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
 
@@ -77,6 +78,6 @@ mod tests {
     #[test]
     #[ignore]
     fn test_print_git_churn() {
-        print_git_churn().unwrap();
+        print_git_churn(".".into()).unwrap();
     }
 }
