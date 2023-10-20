@@ -1,27 +1,12 @@
-mod tree;
-mod ui;
-
-use crate::tree::Tree;
 use clap::Parser;
 use macroquad::prelude::*;
 use std::path::PathBuf;
 
-type AnyError = Box<dyn std::error::Error>;
-
-mod arrangements {
-    pub mod binary;
-    pub mod linear;
-}
-mod metrics {
-    pub mod bytes_per_file;
-    pub mod lines;
-    pub mod word_mentions;
-}
-
-use crate::arrangements::binary;
-use crate::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
-use crate::ui::Ui;
-use arrangements::linear;
+use code_map::arrangements::{binary, linear};
+use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
+use code_map::tree::Tree;
+use code_map::ui::Ui;
+use code_map::{metrics, AnyError};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
