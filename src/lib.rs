@@ -10,5 +10,6 @@ pub mod metrics {
     pub mod lines;
     pub mod word_mentions;
 }
+pub mod git_churn;
 pub mod tree;
 pub mod ui;

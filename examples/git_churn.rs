@@ -1,5 +1,5 @@
 use clap::Parser;
-use code_map::metrics::churn_per_file::print_git_churn;
+use code_map::git_churn::print_git_churn;
 use code_map::AnyError;
 use std::path::PathBuf;
 
