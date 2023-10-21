@@ -39,6 +39,7 @@ This arrangement is not great when a node has many children. The children will b
   - [x] -a --arrangement 
   - [x] -m --metric (file size, line count, code complexity, etc.)
     - [x] --metric churn (`cargo run --example git_churn` for the data without the UI)
+      - [ ] allow processing only the last x commits
     - [ ] --metric refactor (churn * line count)
   - [x] -x --all-file-extensions
   - [ ] -i --input-file (read counts from a file / stdin / sql dump)
