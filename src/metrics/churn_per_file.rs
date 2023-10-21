@@ -11,9 +11,9 @@ pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
 }
 
 fn file_churns_to_tree(folder: PathBuf, file_churns: Vec<FileChurn>) -> Result<Tree, AnyError> {
-    let nodes = file_churns_to_nodes(file_churns);
-    let tree = nodes_to_tree(nodes, folder);
-    Ok(tree)
+    let nodes_flat_list = file_churns_to_nodes(file_churns);
+    let tree = nodes_flat_list_to_tree(nodes_flat_list, folder);
+    tree
 }
 
 fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
@@ -23,8 +23,11 @@ fn file_churns_to_nodes(file_churns: Vec<FileChurn>) -> Vec<Tree> {
         .collect::<Vec<Tree>>()
 }
 
-fn nodes_to_tree(nodes: Vec<Tree>, folder: PathBuf) -> Tree {
+fn nodes_flat_list_to_tree(nodes: Vec<Tree>, folder: PathBuf) -> Result<Tree, AnyError> {
     let mut top_level_folder = folder.to_string_lossy().to_string();
+    if top_level_folder.is_empty() {
+        return Err("folder should not be empty".into());
+    }
 
     let mut wrapping_tree = Tree {
         name: top_level_folder.clone(),
@@ -37,66 +40,95 @@ fn nodes_to_tree(nodes: Vec<Tree>, folder: PathBuf) -> Tree {
         top_level_folder += hierarchy_delimiter;
     }
     for mut node in nodes {
-        let path = node
-            .name
-            .split(hierarchy_delimiter)
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>();
-        node.name = top_level_folder.clone() + &node.name;
-        let mut path_level_iter = path.iter();
-        let mut path_level = top_level_folder.clone() + path_level_iter.next().unwrap();
-        let mut trees_current_level: *mut Tree = &mut wrapping_tree;
-        loop {
-            assert_ne!(path_level, "");
-
-            if let Some(existing_path_level) =
-                get_subtree(&mut path_level, unsafe { &mut *trees_current_level })
-            {
-                trees_current_level = existing_path_level;
-            } else {
-                if node.name == path_level {
-                    let new_node = Tree::new_from_size(path_level.to_string(), node.size.unwrap());
-                    unsafe {
-                        (*trees_current_level).children.push(new_node);
-                    }
-                } else {
-                    let new_node = Tree {
-                        name: path_level.clone(),
-                        size: None,
-                        rect: None,
-                        children: vec![],
-                    };
-                    unsafe {
-                        (*trees_current_level).children.push(new_node);
-                    }
-                }
-
-                unsafe {
-                    trees_current_level = (*trees_current_level).children.last_mut().unwrap();
-                }
-            }
-
-            if let Some(next_path_level) = path_level_iter.next() {
-                path_level += hierarchy_delimiter;
-                path_level += next_path_level;
-            } else {
-                break;
-            }
-        }
+        add_node_to_tree(
+            &mut node,
+            &mut wrapping_tree,
+            &top_level_folder,
+            hierarchy_delimiter,
+        );
     }
     wrapping_tree.get_or_compute_size();
-    wrapping_tree
+    Ok(wrapping_tree)
 }
 
-fn get_subtree<'a>(path_level: &String, trees_current_level: &mut Tree) -> Option<*mut Tree> {
-    let mut found_subtree: Option<*mut Tree> = None;
+fn add_node_to_tree(
+    node: &mut Tree,
+    wrapping_tree: &mut Tree,
+    top_level_folder: &String,
+    hierarchy_delimiter: &str,
+) {
+    let mut path_parts = node
+        .name
+        .split(hierarchy_delimiter)
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
+    node.name = top_level_folder.clone() + &node.name;
+    *path_parts.first_mut().unwrap() = top_level_folder.clone() + path_parts.first().unwrap();
+    let mut trees_current_level: *mut Tree = wrapping_tree;
+    let mut path_level = "".to_string();
+    for path_part in path_parts {
+        path_level += &path_part;
+        trees_current_level =
+            get_existing_or_new_child_node(node, trees_current_level, path_level.clone());
+        path_level += hierarchy_delimiter;
+    }
+}
+
+fn get_existing_or_new_child_node(
+    node: &mut Tree,
+    trees_current_level: *mut Tree,
+    path_level: String,
+) -> *mut Tree {
+    let found_subtree = find_child_node(&path_level, unsafe { &mut *trees_current_level });
+    if let Some(path_level_exists) = found_subtree {
+        path_level_exists
+    } else {
+        add_child_node(node, trees_current_level, path_level)
+    }
+}
+
+fn find_child_node<'a>(path_level: &String, trees_current_level: &mut Tree) -> Option<*mut Tree> {
     for child in trees_current_level.children.iter_mut() {
         if child.name == *path_level {
-            found_subtree = Some(child);
-            break;
+            return Some(child);
         }
     }
-    found_subtree
+    None
+}
+
+fn add_child_node(
+    node: &mut Tree,
+    trees_current_level: *mut Tree,
+    path_level: String,
+) -> *mut Tree {
+    let new_node_for_path_level = create_new_node(node, path_level);
+    unsafe {
+        (*trees_current_level)
+            .children
+            .push(new_node_for_path_level);
+        (*trees_current_level).children.last_mut().unwrap()
+    }
+}
+
+fn create_new_node(node: &Tree, path_level: String) -> Tree {
+    if node.name == path_level {
+        create_leaf_node(node, path_level.clone())
+    } else {
+        create_intermediate_node(path_level)
+    }
+}
+
+fn create_leaf_node(node: &Tree, path_level: String) -> Tree {
+    Tree::new_from_size(path_level, node.size.unwrap())
+}
+
+fn create_intermediate_node(path_level: String) -> Tree {
+    Tree {
+        name: path_level,
+        size: None,
+        rect: None,
+        children: vec![],
+    }
 }
 
 #[cfg(test)]
