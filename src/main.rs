@@ -165,8 +165,9 @@ fn log_counts(treemap: &Tree) {
             visible_counts.leafs, visible_counts.total
         );
     }
-    info!(
-        "The arrangement has a squareness of {}",
-        treemap.compute_squareness()
-    );
+    // TODO: squareness is broken
+    // info!(
+    //     "The arrangement has a squareness of {}",
+    //     treemap.compute_squareness()
+    // );
 }
