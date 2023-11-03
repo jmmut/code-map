@@ -35,6 +35,11 @@ Files ignored by git are also considered.
 
 With this metric, each leaf node is a file, and the size of the node is the number of commits that touched the file. Directories are non-leaf nodes and their metric is the sum of churn of all their children.
 
+You can get the churn from the command line with this command:
+```
+git log --all -M -C --name-only --format='format:' "$@" | grep -v '^$' | sort | uniq -c | sort -n
+```
+
 This is not a stable implementation and may miscount the number of commits in case of file renames. A file that was renamed from `old/path/file.txt` to `new/path/file.txt` may be rendered twice.
 
 Only files in the git repo are considered (the .gitignore file is respected), but these files can be of any file extension.
@@ -84,4 +89,4 @@ This arrangement is not great when a node has many children. The children will b
   - [ ] -o --output-file (dump the hierarchical metrics to a file, as some metrics might be expensive to compute, e.g. code complexity)
   - [ ] aggregate counts of ignored files/extensions
       - [ ] list them with --verbose
-
+  - [ ] --include-extensions
