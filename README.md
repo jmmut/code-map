@@ -18,11 +18,16 @@ You can choose different metrics to plot. Each metric assigns a number to each n
 
 With this metric, each leaf node is a file, and the size of the node is the size of the file. Directories are non-leaf nodes and their metric is the sum of bytes of all their children.
 
+All files are considered, including files ignored by git and files with unknown extensions.
+
 ### Lines per file
 
 `code-map --metric lines-per-file` or `code-map -m l`
 
 With this metric, each leaf node is a file, and the size of the node is the number of lines in the file. Directories are non-leaf nodes and their metric is the sum of lines of all their children.
+
+Only files with known extensions for source code are considered. Files with unknown extensions are ignored.
+Files ignored by git are also considered.
 
 ### Churn per file
 
@@ -31,6 +36,8 @@ With this metric, each leaf node is a file, and the size of the node is the numb
 With this metric, each leaf node is a file, and the size of the node is the number of commits that touched the file. Directories are non-leaf nodes and their metric is the sum of churn of all their children.
 
 This is not a stable implementation and may miscount the number of commits in case of file renames. A file that was renamed from `old/path/file.txt` to `new/path/file.txt` may be rendered twice.
+
+Only files in the git repo are considered (the .gitignore file is respected), but these files can be of any file extension.
 
 ## Arrangements
 
