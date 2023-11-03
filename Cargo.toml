@@ -1,6 +1,6 @@
 [package]
 name = "code-map"
-version = "0.1.0"
+version = "0.0.0" # unused, in the CLI we show the git tag version by using the git-version crate
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,3 +10,4 @@ macroquad = "=0.3.24"
 clap = {version = "=4.3.4", features = ["derive"]}
 ignore = "=0.4.20"
 git2 = "=0.17.2"
+git-version = "=0.3.5"

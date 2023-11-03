@@ -1,17 +1,47 @@
 # code-map
 
-You still have to add a BUTLER_API_KEY secret to the github repo so that the github workflow
-can deploy to itch.io. If the github workflow still fails after this, try uploading manually an initial html5 build.
-
 ## Running this project
 
+You can download a pre-compiled binary for Mac from 
 Clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
 
-You can install it in your PATH with `cargo install --path .`
+You can install it in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` for the available options.
+
+## Metrics 
+
+You can choose different metrics to plot. Each metric assigns a number to each node in a tree. The tree, nodes and metrics can be computed from different sources, but the most common use case is to compute them from a directory tree, where each node is a directory or a file.
+
+### Bytes per file
+
+`code-map --metric bytes-per-file` or `code-map -m b`
+
+With this metric, each leaf node is a file, and the size of the node is the size of the file. Directories are non-leaf nodes and their metric is the sum of bytes of all their children.
+
+### Lines per file
+
+`code-map --metric lines-per-file` or `code-map -m l`
+
+With this metric, each leaf node is a file, and the size of the node is the number of lines in the file. Directories are non-leaf nodes and their metric is the sum of lines of all their children.
+
+### Churn per file
+
+`code-map --metric churn-per-file` or `code-map -m c`
+
+With this metric, each leaf node is a file, and the size of the node is the number of commits that touched the file. Directories are non-leaf nodes and their metric is the sum of churn of all their children.
+
+This is not a stable implementation and may miscount the number of commits in case of file renames. A file that was renamed from `old/path/file.txt` to `new/path/file.txt` may be rendered twice.
 
 ## Arrangements
 
 Different ways of plotting the hierarchical data are available.
+
+### Binary
+
+![binary](./screenshots/binary.png)
+
+This arrangement attempts to solve the shortcomings of the linear arrangement. Given a node with sub-nodes to be plotted in a rectangle, it will sort the sub-nodes (biggest first) and then split them in 2 groups, so that the metrics sum of each group is roughly half the parent node.
+
+It will not produce optimal squareness, but it will be better than the linear arrangement.
 
 ### Linear
 
