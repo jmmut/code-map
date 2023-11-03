@@ -24,16 +24,11 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    pub fn new(mut rect: Rect, font_size: f32) -> Self {
+    pub fn new(rect: Rect, font_size: f32) -> Self {
         let tag = "Search (f): ".to_string();
-        let text_dimensions = measure_text(&tag, None, font_size as u16, 1.0);
-        let tag_pos = Vec2::new(rect.x, rect.y);
-        rect.x += text_dimensions.width;
-        rect.w -= text_dimensions.width;
-        rect.y -= font_size;
-        Self {
+        let mut searcher = Self {
             tag,
-            tag_pos,
+            tag_pos: Vec2::default(),
             font_size,
             rect,
             search_word: "".to_string(),
@@ -41,7 +36,17 @@ impl Searcher {
             focused: false,
             nested_results: None,
             result_changed: false,
-        }
+        };
+        searcher.position(rect);
+        searcher
+    }
+    pub fn position(&mut self, mut rect: Rect) {
+        let text_dimensions = measure_text(&self.tag, None, self.font_size as u16, 1.0);
+        self.tag_pos = Vec2::new(rect.x, rect.y);
+        rect.x += text_dimensions.width;
+        rect.w -= text_dimensions.width;
+        rect.y -= self.font_size;
+        self.rect = rect;
     }
     pub fn get_new_result(&mut self) -> Option<&Vec<TreeView>> {
         if self.result_changed {

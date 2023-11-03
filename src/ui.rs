@@ -31,71 +31,110 @@ const COLORS: &[Color] = &[
 pub struct Ui {
     pub tree: Tree,
     units: String,
-    pub available: Rect,
+    pub map_rect: Rect,
     searcher: Searcher,
     font_size: f32,
     selected: Option<Vec<TreeView>>,
     level: Option<usize>,
     keys: key_queue::OrderedEventHandler,
+    arrange: fn(f32, String, &mut Tree, Rect),
+    arrangement: String,
+    width: f32,
+    height: f32,
+    padding: f32,
 }
 
 impl Ui {
-    pub fn new(tree: Tree, units: &str) -> Self {
+    pub fn new(
+        tree: Tree,
+        units: &str,
+        arrange: fn(f32, String, &mut Tree, Rect),
+        arrangement: String,
+        padding: f32,
+    ) -> Self {
         let width = screen_width();
         let height = screen_height();
-        let available = round_rect(Rect::new(
-            width * 0.05,
-            width * 0.05, // yes, width, not height. this makes the padding the same in both directions
-            width * 0.9,
-            height * 0.75,
-        ));
-
         let font_size = choose_font_size(width, height);
-        let searcher = Searcher::new(
-            Rect::new(
-                available.x,
-                available.y + available.h + font_size * 3.0,
-                available.w,
-                font_size * 1.5,
-            ),
-            font_size,
-        );
+        let map_rect = get_map_rect(width, height, font_size);
+
+        let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
         Self {
             tree,
             units: units.to_string(),
-            available,
+            map_rect,
             font_size,
             searcher,
             selected: None,
             level: None,
             keys: key_queue::OrderedEventHandler::new(),
+            arrange,
+            width,
+            height,
+            padding,
+            arrangement,
         }
     }
 
     pub fn draw(&mut self) {
+        self.maybe_rearrange();
         self.keys.capture_keys_this_frame();
 
         clear_background(LIGHTGRAY);
 
-        choose_and_draw_nested_nodes(
+        choose_and_draw_map_and_path(
             &self.tree,
             &self.units,
-            self.available,
+            self.map_rect,
             self.font_size,
             &mut self.searcher,
             &mut self.selected,
             &mut self.level,
         );
 
-        select_node_with_mouse(&self.tree, self.available, &mut self.selected);
-
-        let Rect { x, y, w, h } = round_rect(self.available);
-        draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
-        draw_nodes_lines(&self.tree, self.available, self.font_size, 1.0, BLACK);
+        select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
 
         self.searcher
             .draw_search(&self.tree, &self.keys.keycode_event_queue);
     }
+
+    fn maybe_rearrange(&mut self) {
+        let new_width = screen_width();
+        let new_height = screen_height();
+        if new_width != self.width || new_height != self.height {
+            self.width = new_width;
+            self.height = new_height;
+            self.map_rect = get_map_rect(self.width, self.height, self.font_size);
+            (self.arrange)(
+                self.padding,
+                self.arrangement.clone(),
+                &mut self.tree,
+                self.map_rect,
+            );
+            self.searcher
+                .position(get_searcher_rect(self.map_rect, self.font_size));
+        }
+    }
+}
+
+fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
+    let small_pad = font_size * 2.5;
+    let big_pad = font_size * 9.5;
+    let map_rect = round_rect(Rect::new(
+        small_pad,
+        small_pad,
+        width - 2.0 * small_pad,
+        height - small_pad - big_pad,
+    ));
+    map_rect
+}
+
+fn get_searcher_rect(map_rect: Rect, font_size: f32) -> Rect {
+    Rect::new(
+        map_rect.x,
+        map_rect.y + map_rect.h + font_size * 3.0,
+        map_rect.w,
+        font_size * 1.5,
+    )
 }
 
 fn choose_font_size(width: f32, height: f32) -> f32 {
@@ -110,9 +149,9 @@ fn choose_font_size(width: f32, height: f32) -> f32 {
         }
 }
 
-fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Vec<TreeView>>) {
+fn select_node_with_mouse(tree: &Tree, map_rect: Rect, selected: &mut Option<Vec<TreeView>>) {
     let mouse_position = Vec2::from(mouse_position());
-    if available.contains(mouse_position) {
+    if map_rect.contains(mouse_position) {
         if is_mouse_button_pressed(MouseButton::Left) {
             let nodes_pointed = tree.get_nested_by_position(mouse_position);
             let new_nodes = TreeView::from_nodes(&nodes_pointed);
@@ -131,10 +170,10 @@ fn select_node_with_mouse(tree: &Tree, available: Rect, selected: &mut Option<Ve
     }
 }
 
-fn choose_and_draw_nested_nodes(
+fn choose_and_draw_map_and_path(
     tree: &Tree,
     units: &str,
-    available: Rect,
+    map_rect: Rect,
     font_size: f32,
     searcher: &mut Searcher,
     selected: &mut Option<Vec<TreeView>>,
@@ -142,12 +181,17 @@ fn choose_and_draw_nested_nodes(
 ) {
     if let Some(nested_nodes) = searcher.get_new_result() {
         *selected = Some(nested_nodes.clone());
-        draw_nested_nodes_and_path(units, available, font_size, &nested_nodes, level);
+        draw_colored_map_and_path(units, map_rect, font_size, &nested_nodes, level);
     } else if let Some(selected_nodes) = &selected {
-        draw_nested_nodes_and_path(units, available, font_size, &selected_nodes, level);
+        draw_colored_map_and_path(units, map_rect, font_size, &selected_nodes, level);
     } else {
-        draw_hovered_nested_nodes(units, &tree, available, font_size, level);
+        draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level);
     }
+
+    let Rect { x, y, w, h } = round_rect(map_rect);
+    draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
+    draw_nodes_lines(&tree, map_rect, font_size, 1.0, BLACK);
+
     if is_key_pressed(KeyCode::Backspace) {
         if let Some(nested_nodes) = selected {
             nested_nodes.pop();
@@ -155,9 +199,9 @@ fn choose_and_draw_nested_nodes(
     }
 }
 
-fn draw_nested_nodes_and_path(
+fn draw_colored_map_and_path(
     units: &str,
-    available: Rect,
+    map_rect: Rect,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: &mut Option<usize>,
@@ -165,11 +209,12 @@ fn draw_nested_nodes_and_path(
     if nested_nodes.len() > 0 {
         // draw color background over the node name at the bottom
         let mut previous_width = 0.0;
+        let path_y = map_rect.y + map_rect.h + font_size * 4.5;
         for (i, node) in nested_nodes.iter().enumerate() {
             let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
             let rect = Rect::new(
-                available.x + previous_width,
-                2.0 * available.y + available.h,
+                map_rect.x + previous_width,
+                path_y,
                 dimensions.width - previous_width,
                 1.5 * font_size,
             );
@@ -200,12 +245,7 @@ fn draw_nested_nodes_and_path(
         }
 
         // draw the text of the node name and the units
-        let path_rect = Rect::new(
-            available.x,
-            2.0 * available.y + available.h,
-            previous_width,
-            1.5 * font_size,
-        );
+        let path_rect = Rect::new(map_rect.x, path_y, previous_width, 1.5 * font_size);
         if is_rect_clicked(&path_rect, MouseButton::Right) {
             *level_opt = None;
         }
@@ -221,8 +261,8 @@ fn draw_nested_nodes_and_path(
 
         draw_text(
             &text,
-            available.x,
-            2.0 * available.y + available.h + 1.0 * font_size,
+            map_rect.x,
+            path_y + 1.0 * font_size,
             font_size,
             BLACK,
         );
@@ -231,16 +271,16 @@ fn draw_nested_nodes_and_path(
                 let deepest_text = format!("{}", deepest_child.name);
                 draw_text(
                     &deepest_text,
-                    available.x,
-                    2.0 * available.y + available.h + 1.0 * font_size,
+                    map_rect.x,
+                    path_y + 1.0 * font_size,
                     font_size,
                     GRAY,
                 );
                 let text = format!("{}", node.name);
                 draw_text(
                     &text,
-                    available.x,
-                    2.0 * available.y + available.h + 1.0 * font_size,
+                    map_rect.x,
+                    path_y + 1.0 * font_size,
                     font_size,
                     BLACK,
                 );
@@ -271,16 +311,16 @@ fn is_rect_clicked(rect: &Rect, mouse_button: MouseButton) -> bool {
 fn draw_hovered_nested_nodes(
     units: &str,
     treemap: &Tree,
-    available: Rect,
+    map_rect: Rect,
     font_size: f32,
     level: &mut Option<usize>,
 ) {
     let mouse_position = Vec2::from(mouse_position());
-    if available.contains(mouse_position) {
+    if map_rect.contains(mouse_position) {
         let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_nested_nodes_and_path(
+        draw_colored_map_and_path(
             units,
-            available,
+            map_rect,
             font_size,
             &TreeView::from_nodes(&nodes_pointed),
             level,
@@ -300,7 +340,7 @@ fn round_rect(rect: Rect) -> Rect {
     )
 }
 
-fn draw_nodes_lines(node: &Tree, available: Rect, font_size: f32, thickness: f32, color: Color) {
+fn draw_nodes_lines(node: &Tree, map_rect: Rect, font_size: f32, thickness: f32, color: Color) {
     if let Some(rect) = node.rect {
         let Rect { x, y, w, h } = round_rect(rect);
         draw_rectangle_lines(x, y, w, h, thickness, color);
@@ -319,7 +359,7 @@ fn draw_nodes_lines(node: &Tree, available: Rect, font_size: f32, thickness: f32
         //     BLACK,
         // );
         for child in &node.children {
-            draw_nodes_lines(child, available, font_size, thickness, color);
+            draw_nodes_lines(child, map_rect, font_size, thickness, color);
         }
     }
 }

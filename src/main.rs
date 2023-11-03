@@ -1,7 +1,7 @@
 use clap::Parser;
+use git_version::git_version;
 use macroquad::prelude::*;
 use std::path::PathBuf;
-use git_version::git_version;
 
 use code_map::arrangements::{binary, linear};
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
@@ -15,7 +15,6 @@ const DEFAULT_WINDOW_HEIGHT: i32 = 675;
 const DEFAULT_WINDOW_TITLE: &str = "Code Map";
 
 pub const GIT_VERSION: &str = git_version!(args = ["--tags"]);
-
 
 /// Plot hierarchical metrics like file sizes in a folder structure.
 #[derive(Parser)]
@@ -74,9 +73,9 @@ async fn main() -> Result<(), AnyError> {
         "computing metrics"
     );
 
-    let mut ui = Ui::new(tree, units);
+    let mut ui = Ui::new(tree, units, arrange, arrangement.clone(), padding);
     log_time!(
-        arrange(padding, arrangement, &mut ui.tree, ui.available),
+        arrange(padding, arrangement.clone(), &mut ui.tree, ui.map_rect),
         "arrangement"
     );
     log_time!(log_counts(&ui.tree));
