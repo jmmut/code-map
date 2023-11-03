@@ -2,10 +2,11 @@
 
 ## Running this project
 
-You can download a pre-compiled binary for Mac from 
-Clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
+You can download a pre-compiled binary for Mac from https://s3.console.aws.amazon.com/s3/buckets/intrasonics-releases?prefix=code-map/&region=eu-west-1
 
-You can install it in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` for the available options.
+You can also clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
+
+If you cloned the repo, you can install the binary in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` for the available options.
 
 ## Metrics 
 
