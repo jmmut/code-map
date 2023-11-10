@@ -98,6 +98,6 @@ mod tests {
     #[test]
     #[ignore]
     fn test_print_git_churn() {
-        print_git_churn(".".into()).unwrap();
+        print_git_churn(".".into(), None).unwrap();
     }
 }
