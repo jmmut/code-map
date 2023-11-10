@@ -142,35 +142,50 @@ fn draw_path_text(
     } else {
         deepest_child.size
     };
-    let text = format!("{}: {} {}", deepest_child.name, size, units);
+    let selected_node_name = if let Some(level) = level_opt {
+        if let Some(node) = nested_nodes.get(*level) {
+            Some(node.name.clone())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    let deepest_child_color = if selected_node_name.is_none() {
+        BLACK
+    } else {
+        GRAY
+    };
 
+    let deepest_text = format!("{}", deepest_child.name);
     draw_text(
-        &text,
+        &deepest_text,
         map_rect.x,
         path_y + 1.0 * font_size,
         font_size,
+        deepest_child_color,
+    );
+
+    if let Some(node_name) = selected_node_name {
+        let text = format!("{}", node_name);
+        draw_text(
+            &text,
+            map_rect.x,
+            path_y + 1.0 * font_size,
+            font_size,
+            BLACK,
+        );
+    }
+
+    let size_text = format!("{} {}", size, units);
+
+    draw_text(
+        &size_text,
+        map_rect.x + previous_width,
+        path_y + 2.5 * font_size,
+        font_size,
         BLACK,
     );
-    if let Some(level) = level_opt {
-        if let Some(node) = nested_nodes.get(*level) {
-            let deepest_text = format!("{}", deepest_child.name);
-            draw_text(
-                &deepest_text,
-                map_rect.x,
-                path_y + 1.0 * font_size,
-                font_size,
-                GRAY,
-            );
-            let text = format!("{}", node.name);
-            draw_text(
-                &text,
-                map_rect.x,
-                path_y + 1.0 * font_size,
-                font_size,
-                BLACK,
-            );
-        }
-    }
 }
 
 fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: &mut Option<usize>) {
