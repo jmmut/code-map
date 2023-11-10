@@ -101,6 +101,7 @@ impl Ui {
         let new_width = screen_width();
         let new_height = screen_height();
         if new_width != self.width || new_height != self.height {
+            self.selected = None;
             self.width = new_width;
             self.height = new_height;
             self.map_rect = get_map_rect(self.width, self.height, self.font_size);
