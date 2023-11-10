@@ -44,6 +44,8 @@ This is not a stable implementation and may miscount the number of commits in ca
 
 Only files in the git repo are considered (the .gitignore file is respected), but these files can be of any file extension.
 
+If the repo has many thousands of old commits you don't care about, you can limit how many of the most recent commits are considered with the `--max-commits` option.
+
 ## Arrangements
 
 Different ways of plotting the hierarchical data are available.

@@ -25,10 +25,6 @@ pub struct Cli {
     #[arg(default_value = ".")]
     pub input_folder: PathBuf,
 
-    /// Padding in pixels between hierarchies (e.g. 4).
-    #[arg(short, long, default_value = "0")]
-    pub padding: f32,
-
     /// arrangement algorithm: linear or binary.
     #[arg(short, long, default_value = "binary")]
     pub arrangement: String,
@@ -39,7 +35,12 @@ pub struct Cli {
     // Don't filter by extension of source code files
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
-    /// maximum number of commits to consider when computing churn
+
+    /// Padding in pixels between hierarchies (e.g. 4) (only for linear arrangement).
+    #[arg(short, long, default_value = "0")]
+    pub padding: f32,
+
+    /// maximum number of commits to consider (only for churn-per-file metric)
     #[arg(long)]
     pub max_commits: Option<usize>,
 }
