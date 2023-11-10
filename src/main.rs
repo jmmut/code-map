@@ -39,6 +39,9 @@ pub struct Cli {
     // Don't filter by extension of source code files
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
+    /// maximum number of commits to consider when computing churn
+    #[arg(long)]
+    pub max_commits: Option<usize>,
 }
 
 macro_rules! log_time {
@@ -67,10 +70,11 @@ async fn main() -> Result<(), AnyError> {
         arrangement,
         metric,
         // all_extensions,
+        max_commits,
     } = Cli::parse();
 
     let (tree, units) = log_time!(
-        compute_metrics(&input_folder, &metric, all_extensions),
+        compute_metrics(&input_folder, &metric, all_extensions, max_commits),
         "computing metrics"
     );
 
@@ -110,6 +114,7 @@ fn compute_metrics(
     input_folder: &PathBuf,
     metric: &Metrics,
     all_extensions: bool,
+    max_commits: Option<usize>,
 ) -> (Tree, &'static str) {
     let (tree, units) = match metric {
         Metrics::BytesPerFile => (
@@ -136,7 +141,7 @@ fn compute_metrics(
             "lines",
         ),
         Metrics::ChurnPerFile => (
-            metrics::churn_per_file::git_churn_per_file(input_folder.clone()).unwrap(),
+            metrics::churn_per_file::git_churn_per_file(input_folder.clone(), max_commits).unwrap(),
             "modifications (commits per file)",
         ),
     };

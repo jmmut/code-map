@@ -4,8 +4,8 @@ use crate::git_churn::{git_churn, FileChurn};
 use crate::tree::Tree;
 use crate::AnyError;
 
-pub fn git_churn_per_file(folder: PathBuf) -> Result<Tree, AnyError> {
-    let file_churns = git_churn(folder.clone())?;
+pub fn git_churn_per_file(folder: PathBuf, max_commits: Option<usize>) -> Result<Tree, AnyError> {
+    let file_churns = git_churn(folder.clone(), max_commits)?;
     let tree = file_churns_to_tree(folder, file_churns);
     tree
 }

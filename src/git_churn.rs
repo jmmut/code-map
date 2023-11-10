@@ -12,8 +12,8 @@ pub struct FileChurn {
     pub count: i32,
 }
 
-pub fn print_git_churn(path: PathBuf) -> Result<(), AnyError> {
-    let mut files_and_counts = git_churn(path)?;
+pub fn print_git_churn(path: PathBuf, max_commits: Option<usize>) -> Result<(), AnyError> {
+    let mut files_and_counts = git_churn(path, max_commits)?;
     files_and_counts.sort_by(|a, b| a.count.cmp(&b.count));
     for FileChurn { path, count } in files_and_counts {
         println!("{:>5} {}", count, path);
@@ -21,7 +21,7 @@ pub fn print_git_churn(path: PathBuf) -> Result<(), AnyError> {
     Ok(())
 }
 
-pub fn git_churn(path: PathBuf) -> Result<Vec<FileChurn>, AnyError> {
+pub fn git_churn(path: PathBuf, max_commits: Option<usize>) -> Result<Vec<FileChurn>, AnyError> {
     let repo = Repository::open(path)?;
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
@@ -54,6 +54,11 @@ pub fn git_churn(path: PathBuf) -> Result<Vec<FileChurn>, AnyError> {
                 "Still processing commits... Processed commits so far: {}",
                 commit_count
             );
+        }
+        if let Some(max) = max_commits {
+            if commit_count >= max {
+                break;
+            }
         }
     }
     info!("Total commits processed: {}", commit_count);

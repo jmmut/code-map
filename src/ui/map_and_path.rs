@@ -198,7 +198,7 @@ fn draw_path_text(
     draw_rectangle(
         top_left.x + metric_x,
         top_left.y + 1.5 * font_size,
-        text_width + 2.0* pad,
+        text_width + 2.0 * pad,
         1.5 * font_size,
         COLORS[if let Some(level) = level_opt {
             *level
