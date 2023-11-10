@@ -4,6 +4,7 @@ use macroquad::prelude::{
     draw_rectangle, draw_rectangle_lines, draw_text, is_key_pressed, measure_text, mouse_position,
     KeyCode, MouseButton, Rect, Vec2, BLACK, GRAY,
 };
+use std::collections::VecDeque;
 
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{is_rect_clicked, round_rect};
@@ -73,32 +74,41 @@ fn draw_path(
     level_opt: &mut Option<usize>,
 ) {
     let path_y = map_rect.y + map_rect.h + font_size * 4.5;
-    let previous_width = draw_path_color(map_rect, font_size, nested_nodes, level_opt, path_y);
+    let node_name_widths = compute_name_widths(nested_nodes, font_size);
+    let top_left = Vec2::new(map_rect.x, path_y);
+    draw_path_color(top_left, font_size, &node_name_widths, level_opt);
     draw_path_text(
         units,
-        map_rect,
+        top_left,
         font_size,
         nested_nodes,
         level_opt,
-        previous_width,
-        path_y,
+        node_name_widths,
     );
 }
 
+fn compute_name_widths(nested_nodes: &Vec<TreeView>, font_size: f32) -> VecDeque<f32> {
+    nested_nodes
+        .iter()
+        .map(|node| {
+            let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+            dimensions.width
+        })
+        .collect()
+}
+
 fn draw_path_color(
-    map_rect: Rect,
+    top_left: Vec2,
     font_size: f32,
-    nested_nodes: &Vec<TreeView>,
+    node_name_widths: &VecDeque<f32>,
     level_opt: &mut Option<usize>,
-    path_y: f32,
-) -> f32 {
+) {
     let mut previous_width = 0.0;
-    for (i, node) in nested_nodes.iter().enumerate() {
-        let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+    for (i, width) in node_name_widths.iter().enumerate() {
         let rect = Rect::new(
-            map_rect.x + previous_width,
-            path_y,
-            dimensions.width - previous_width,
+            top_left.x + previous_width,
+            top_left.y,
+            width - previous_width,
             1.5 * font_size,
         );
         if level_opt.is_some_and(|level| level < i) {
@@ -116,21 +126,21 @@ fn draw_path_color(
         if is_rect_clicked(&rect, MouseButton::Left) {
             set_if_different_or_unset_if_same(level_opt, i);
         }
-        previous_width = dimensions.width;
+        previous_width = *width;
     }
-    previous_width
 }
 
 fn draw_path_text(
     units: &str,
-    map_rect: Rect,
+    top_left: Vec2,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: &mut Option<usize>,
-    previous_width: f32,
-    path_y: f32,
+    mut node_name_widths: VecDeque<f32>,
 ) {
-    let path_rect = Rect::new(map_rect.x, path_y, previous_width, 1.5 * font_size);
+    node_name_widths.push_front(0.0);
+    let previous_width = *node_name_widths.back().unwrap();
+    let path_rect = Rect::new(top_left.x, top_left.y, previous_width, 1.5 * font_size);
     if is_rect_clicked(&path_rect, MouseButton::Right) {
         *level_opt = None;
     }
@@ -160,8 +170,8 @@ fn draw_path_text(
     let deepest_text = format!("{}", deepest_child.name);
     draw_text(
         &deepest_text,
-        map_rect.x,
-        path_y + 1.0 * font_size,
+        top_left.x,
+        top_left.y + 1.0 * font_size,
         font_size,
         deepest_child_color,
     );
@@ -170,19 +180,36 @@ fn draw_path_text(
         let text = format!("{}", node_name);
         draw_text(
             &text,
-            map_rect.x,
-            path_y + 1.0 * font_size,
+            top_left.x,
+            top_left.y + 1.0 * font_size,
             font_size,
             BLACK,
         );
     }
 
     let size_text = format!("{} {}", size, units);
-
+    let text_width = measure_text(&size_text, None, font_size as u16, 1.0).width;
+    let metric_x = if let Some(level) = level_opt {
+        *node_name_widths.get(*level).unwrap()
+    } else {
+        node_name_widths.iter().rev().nth(1).unwrap().clone()
+    };
+    let pad = 0.5 * font_size;
+    draw_rectangle(
+        top_left.x + metric_x,
+        top_left.y + 1.5 * font_size,
+        text_width + 2.0* pad,
+        1.5 * font_size,
+        COLORS[if let Some(level) = level_opt {
+            *level
+        } else {
+            node_name_widths.len() - 2
+        } % COLORS.len()],
+    );
     draw_text(
         &size_text,
-        map_rect.x + previous_width,
-        path_y + 2.5 * font_size,
+        top_left.x + metric_x + pad,
+        top_left.y + 2.5 * font_size,
         font_size,
         BLACK,
     );
