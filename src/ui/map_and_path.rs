@@ -60,91 +60,131 @@ fn draw_colored_map_and_path(
     level_opt: &mut Option<usize>,
 ) {
     if nested_nodes.len() > 0 {
-        // draw color background over the node name at the bottom
-        let mut previous_width = 0.0;
-        let path_y = map_rect.y + map_rect.h + font_size * 4.5;
-        for (i, node) in nested_nodes.iter().enumerate() {
-            let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
-            let rect = Rect::new(
-                map_rect.x + previous_width,
-                path_y,
-                dimensions.width - previous_width,
-                1.5 * font_size,
-            );
-            if level_opt.is_some_and(|level| level < i) {
-                draw_rectangle_lines(
-                    rect.x,
-                    rect.y,
-                    rect.w,
-                    rect.h,
-                    4.0,
-                    COLORS[i % COLORS.len()],
-                );
-            } else {
-                draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
-            }
-            if is_rect_clicked(&rect, MouseButton::Left) {
-                set_if_different_or_unset_if_same(level_opt, i);
-            }
-            previous_width = dimensions.width;
-        }
+        draw_path(units, map_rect, font_size, nested_nodes, level_opt);
+        draw_colored_selected_in_map(nested_nodes, level_opt);
+    }
+}
 
-        // draw the text of the node name and the units
-        let path_rect = Rect::new(map_rect.x, path_y, previous_width, 1.5 * font_size);
-        if is_rect_clicked(&path_rect, MouseButton::Right) {
-            *level_opt = None;
-        }
-        let deepest_child = nested_nodes.last().unwrap();
-        let size = if let Some(level) = level_opt {
-            nested_nodes
-                .get(*level)
-                .map_or(deepest_child.size, |node| node.size)
-        } else {
-            deepest_child.size
-        };
-        let text = format!("{}: {} {}", deepest_child.name, size, units);
+fn draw_path(
+    units: &str,
+    map_rect: Rect,
+    font_size: f32,
+    nested_nodes: &Vec<TreeView>,
+    level_opt: &mut Option<usize>,
+) {
+    let path_y = map_rect.y + map_rect.h + font_size * 4.5;
+    let previous_width = draw_path_color(map_rect, font_size, nested_nodes, level_opt, path_y);
+    draw_path_text(
+        units,
+        map_rect,
+        font_size,
+        nested_nodes,
+        level_opt,
+        previous_width,
+        path_y,
+    );
+}
 
-        draw_text(
-            &text,
-            map_rect.x,
-            path_y + 1.0 * font_size,
-            font_size,
-            BLACK,
+fn draw_path_color(
+    map_rect: Rect,
+    font_size: f32,
+    nested_nodes: &Vec<TreeView>,
+    level_opt: &mut Option<usize>,
+    path_y: f32,
+) -> f32 {
+    let mut previous_width = 0.0;
+    for (i, node) in nested_nodes.iter().enumerate() {
+        let dimensions = measure_text(&node.name, None, font_size as u16, 1.0);
+        let rect = Rect::new(
+            map_rect.x + previous_width,
+            path_y,
+            dimensions.width - previous_width,
+            1.5 * font_size,
         );
-        if let Some(level) = level_opt {
-            if let Some(node) = nested_nodes.get(*level) {
-                let deepest_text = format!("{}", deepest_child.name);
-                draw_text(
-                    &deepest_text,
-                    map_rect.x,
-                    path_y + 1.0 * font_size,
-                    font_size,
-                    GRAY,
-                );
-                let text = format!("{}", node.name);
-                draw_text(
-                    &text,
-                    map_rect.x,
-                    path_y + 1.0 * font_size,
-                    font_size,
-                    BLACK,
-                );
-            }
+        if level_opt.is_some_and(|level| level < i) {
+            draw_rectangle_lines(
+                rect.x,
+                rect.y,
+                rect.w,
+                rect.h,
+                4.0,
+                COLORS[i % COLORS.len()],
+            );
+        } else {
+            draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
         }
+        if is_rect_clicked(&rect, MouseButton::Left) {
+            set_if_different_or_unset_if_same(level_opt, i);
+        }
+        previous_width = dimensions.width;
+    }
+    previous_width
+}
 
-        // draw the color blocks in the nodes rect
-        for (i, node) in nested_nodes.iter().enumerate() {
-            if let Some(node_rect) = node.rect {
-                let Rect { x, y, w, h } = round_rect(node_rect);
-                if level_opt.is_some_and(|level| i > level) {
-                    let thickness = w.min(h).min(10.0);
-                    draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
-                } else {
-                    draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
-                }
+fn draw_path_text(
+    units: &str,
+    map_rect: Rect,
+    font_size: f32,
+    nested_nodes: &Vec<TreeView>,
+    level_opt: &mut Option<usize>,
+    previous_width: f32,
+    path_y: f32,
+) {
+    let path_rect = Rect::new(map_rect.x, path_y, previous_width, 1.5 * font_size);
+    if is_rect_clicked(&path_rect, MouseButton::Right) {
+        *level_opt = None;
+    }
+    let deepest_child = nested_nodes.last().unwrap();
+    let size = if let Some(level) = level_opt {
+        nested_nodes
+            .get(*level)
+            .map_or(deepest_child.size, |node| node.size)
+    } else {
+        deepest_child.size
+    };
+    let text = format!("{}: {} {}", deepest_child.name, size, units);
+
+    draw_text(
+        &text,
+        map_rect.x,
+        path_y + 1.0 * font_size,
+        font_size,
+        BLACK,
+    );
+    if let Some(level) = level_opt {
+        if let Some(node) = nested_nodes.get(*level) {
+            let deepest_text = format!("{}", deepest_child.name);
+            draw_text(
+                &deepest_text,
+                map_rect.x,
+                path_y + 1.0 * font_size,
+                font_size,
+                GRAY,
+            );
+            let text = format!("{}", node.name);
+            draw_text(
+                &text,
+                map_rect.x,
+                path_y + 1.0 * font_size,
+                font_size,
+                BLACK,
+            );
+        }
+    }
+}
+
+fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: &mut Option<usize>) {
+    for (i, node) in nested_nodes.iter().enumerate() {
+        if let Some(node_rect) = node.rect {
+            let Rect { x, y, w, h } = round_rect(node_rect);
+            if level_opt.is_some_and(|level| i > level) {
+                let thickness = w.min(h).min(10.0);
+                draw_rectangle_lines(x, y, w, h, thickness, COLORS[i % COLORS.len()]);
             } else {
-                // a null rect can happen for empty folders or if a file has size 0
+                draw_rectangle(x, y, w, h, COLORS[i % COLORS.len()]);
             }
+        } else {
+            // a null rect can happen for empty folders or if a file has size 0
         }
     }
 }
