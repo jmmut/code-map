@@ -145,17 +145,21 @@ fn select_node_with_mouse(tree: &Tree, map_rect: Rect, selected: &mut Option<Vec
         if is_mouse_button_pressed(MouseButton::Left) {
             let nodes_pointed = tree.get_nested_by_position(mouse_position);
             let new_nodes = TreeView::from_nodes(&nodes_pointed);
-            if let Some(selected_nodes) = selected {
-                if *selected_nodes == new_nodes {
-                    *selected = None;
-                } else {
-                    *selected = Some(new_nodes);
-                }
-            } else {
-                *selected = Some(new_nodes);
-            }
+            set_if_different_or_unset_if_same(selected, new_nodes);
         } else if is_mouse_button_pressed(MouseButton::Right) {
             *selected = None;
         }
+    }
+}
+
+fn set_if_different_or_unset_if_same<T: PartialEq>(selected: &mut Option<T>, new_nodes: T) {
+    if let Some(selected_nodes) = selected {
+        if *selected_nodes == new_nodes {
+            *selected = None;
+        } else {
+            *selected = Some(new_nodes);
+        }
+    } else {
+        *selected = Some(new_nodes);
     }
 }

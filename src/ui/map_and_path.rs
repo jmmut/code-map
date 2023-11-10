@@ -8,6 +8,7 @@ use macroquad::prelude::{
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{is_rect_clicked, round_rect};
 use crate::ui::searcher::Searcher;
+use crate::ui::set_if_different_or_unset_if_same;
 
 const COLORS: &[Color] = &[
     BEIGE,
@@ -83,15 +84,7 @@ fn draw_colored_map_and_path(
                 draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
             }
             if is_rect_clicked(&rect, MouseButton::Left) {
-                if let Some(level) = level_opt {
-                    if *level == i {
-                        *level_opt = None;
-                    } else {
-                        *level_opt = Some(i);
-                    }
-                } else {
-                    *level_opt = Some(i);
-                }
+                set_if_different_or_unset_if_same(level_opt, i);
             }
             previous_width = dimensions.width;
         }
