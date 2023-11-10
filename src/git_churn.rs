@@ -1,7 +1,8 @@
-use git2::{Repository, Tree};
-use macroquad::prelude::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
+
+use git2::{Repository, Tree};
+use macroquad::prelude::info;
 
 use crate::AnyError;
 

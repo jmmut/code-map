@@ -1,5 +1,6 @@
-use crate::tree::Tree;
 use macroquad::prelude::Rect;
+
+use crate::tree::Tree;
 
 pub fn arrange(node: &mut Tree, rect: Rect, pad: f32) {
     node.rect = Some(rect);
@@ -35,8 +36,9 @@ pub fn arrange(node: &mut Tree, rect: Rect, pad: f32) {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use macroquad::prelude::Vec2;
+
+    use super::*;
 
     #[test]
     fn test_contains() {

@@ -1,8 +1,10 @@
-use crate::tree::Tree;
-use crate::AnyError;
-use macroquad::prelude::{error, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use macroquad::prelude::{error, warn};
+
+use crate::tree::Tree;
+use crate::AnyError;
 
 pub fn bytes_per_file(folder: &PathBuf) -> Result<Tree, AnyError> {
     let path = Path::new(folder);

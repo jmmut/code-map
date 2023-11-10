@@ -1,7 +1,8 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use git_version::git_version;
 use macroquad::prelude::*;
-use std::path::PathBuf;
 
 use code_map::arrangements::{binary, linear};
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;

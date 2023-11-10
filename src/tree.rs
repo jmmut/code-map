@@ -1,5 +1,6 @@
-use crate::arrangements::binary::squareness;
 use macroquad::prelude::{Rect, Vec2};
+
+use crate::arrangements::binary::squareness;
 
 #[derive(Debug, Clone)]
 pub struct Tree {
@@ -229,8 +230,9 @@ impl PartialEq for TreeView {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::arrangements::binary;
+
+    use super::*;
 
     #[test]
     fn test_basic_size_computation() {

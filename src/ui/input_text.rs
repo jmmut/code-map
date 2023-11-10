@@ -1,7 +1,9 @@
-use crate::ui::key_queue::InputCharacter;
+use std::collections::VecDeque;
+
 use macroquad::input::KeyCode;
 use macroquad::prelude::{draw_rectangle, draw_rectangle_lines, draw_text, Rect, BLACK, WHITE};
-use std::collections::VecDeque;
+
+use crate::ui::key_queue::InputCharacter;
 
 pub struct InputText<'a> {
     pub rect: Rect,

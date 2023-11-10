@@ -1,8 +1,9 @@
+use std::collections::VecDeque;
+
 use macroquad::miniquad;
 use macroquad::miniquad::{Context, GraphicsContext, KeyMods};
 use macroquad::prelude::utils::{register_input_subscriber, repeat_all_miniquad_input};
 use macroquad::prelude::KeyCode;
-use std::collections::VecDeque;
 
 pub struct OrderedEventHandler {
     pub keycode_event_queue: VecDeque<InputCharacter>,

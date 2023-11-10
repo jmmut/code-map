@@ -100,9 +100,10 @@ fn average_squareness(rectangles: &[Rect]) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::arrangements::linear;
     use crate::arrangements::linear::tests::assert_float_eq;
+
+    use super::*;
 
     #[test]
     fn test_squareness() {

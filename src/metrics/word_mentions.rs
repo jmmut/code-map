@@ -1,10 +1,12 @@
-use crate::metrics::bytes_per_file::has_allowed_extension;
-use crate::tree::Tree;
-use crate::AnyError;
-use macroquad::prelude::{error, warn};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use macroquad::prelude::{error, warn};
+
+use crate::metrics::bytes_per_file::has_allowed_extension;
+use crate::tree::Tree;
+use crate::AnyError;
 
 #[rustfmt::skip]
 pub const TEXT_FILE_EXTENSIONS: &[&str] = &[
