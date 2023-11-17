@@ -42,9 +42,7 @@ pub fn choose_and_draw_map_and_path(
         draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level);
     }
 
-    let Rect { x, y, w, h } = round_rect(map_rect);
-    draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
-    draw_nodes_lines(&tree, map_rect, font_size, 1.0, BLACK);
+    draw_nodes_lines(&tree, map_rect, *level, font_size);
 }
 
 fn draw_colored_map_and_path(
@@ -246,10 +244,32 @@ fn draw_hovered_nested_nodes(
     }
 }
 
-fn draw_nodes_lines(node: &Tree, map_rect: Rect, font_size: f32, thickness: f32, color: Color) {
+fn draw_nodes_lines(tree: &Tree, map_rect: Rect, selected: Option<usize>, font_size: f32) {
+    let Rect { x, y, w, h } = round_rect(map_rect);
+    draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
+    draw_nodes_lines_recursive(
+        &tree,
+        map_rect,
+        selected,
+        font_size,
+        1.0,
+        BLACK,
+        Color::new(0.6, 0.6, 0.6, 1.00),
+        0,
+    );
+}
+
+fn draw_nodes_lines_recursive(
+    node: &Tree,
+    map_rect: Rect,
+    level: Option<usize>,
+    font_size: f32,
+    thickness: f32,
+    color_focus: Color,
+    color_details: Color,
+    current_level: usize,
+) {
     if let Some(rect) = node.rect {
-        let Rect { x, y, w, h } = round_rect(rect);
-        draw_rectangle_lines(x, y, w, h, thickness, color);
         // draw_text(
         //     &node.name,
         //     x + 1.5 * font_size,
@@ -265,7 +285,24 @@ fn draw_nodes_lines(node: &Tree, map_rect: Rect, font_size: f32, thickness: f32,
         //     BLACK,
         // );
         for child in &node.children {
-            draw_nodes_lines(child, map_rect, font_size, thickness, color);
+            draw_nodes_lines_recursive(
+                child,
+                map_rect,
+                level,
+                font_size,
+                thickness,
+                color_focus,
+                color_details,
+                current_level + 1,
+            );
         }
+
+        let Rect { x, y, w, h } = round_rect(rect);
+        let color = if level.is_some_and(|level| current_level > level) {
+            color_details
+        } else {
+            color_focus
+        };
+        draw_rectangle_lines(x, y, w, h, thickness, color);
     }
 }
