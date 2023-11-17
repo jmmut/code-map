@@ -1,8 +1,8 @@
 use macroquad::color::{Color, BEIGE, BLUE, GREEN, LIME, PINK, PURPLE, SKYBLUE, VIOLET, WHITE};
 use macroquad::math::f32;
 use macroquad::prelude::{
-    draw_rectangle, draw_rectangle_lines, draw_text, is_key_pressed, measure_text, mouse_position,
-    KeyCode, MouseButton, Rect, Vec2, BLACK, GRAY,
+    draw_rectangle, draw_rectangle_lines, draw_text, measure_text, mouse_position, MouseButton,
+    Rect, Vec2, BLACK, GRAY,
 };
 use std::collections::VecDeque;
 
@@ -45,12 +45,6 @@ pub fn choose_and_draw_map_and_path(
     let Rect { x, y, w, h } = round_rect(map_rect);
     draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
     draw_nodes_lines(&tree, map_rect, font_size, 1.0, BLACK);
-
-    if is_key_pressed(KeyCode::Backspace) {
-        if let Some(nested_nodes) = selected {
-            nested_nodes.pop();
-        }
-    }
 }
 
 fn draw_colored_map_and_path(
