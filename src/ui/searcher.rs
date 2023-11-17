@@ -102,7 +102,7 @@ impl Searcher {
         }
 
         if should_search {
-            self.results = treemap.search(&self.search_word, 20);
+            self.results = treemap.search_words(&self.search_word, 20);
             self.results.sort_by(|a, b| a.len().cmp(&b.len()));
             if let Some(first) = self.results.first() {
                 self.nested_results =

@@ -156,20 +156,40 @@ impl Tree {
             }
         }
     }
+    pub fn search_words(&self, search_words: &str, limit: usize) -> Vec<String> {
+        let words = search_words.split(" ").collect::<Vec<&str>>();
+        self.compute_recursively(
+            &|node, mut ongoing_result: Vec<String>| {
+                if fuzzy_contains(&node.name, &words) {
+                    ongoing_result.push(node.name.clone());
+                }
+                let enough_results = ongoing_result.len() >= limit;
+                (ongoing_result, enough_results)
+            },
+            Vec::new(),
+        )
+        .0
+    }
 
-    fn compute_recursively<R, F: Fn(&Tree, R) -> R>(&self, f: &F, initial: R) -> R {
-        let mut current_result = f(self, initial);
-        for child in &self.children {
-            current_result = child.compute_recursively(f, current_result);
+    fn compute_recursively<R, F: Fn(&Tree, R) -> (R, bool)>(&self, f: &F, initial: R) -> (R, bool) {
+        let (mut current_result, mut early_return) = f(self, initial);
+        if early_return {
+            return (current_result, true);
         }
-        current_result
+        for child in &self.children {
+            (current_result, early_return) = child.compute_recursively(f, current_result);
+            if early_return {
+                return (current_result, true);
+            }
+        }
+        (current_result, false)
     }
 
     pub fn compute_squareness(&self) -> f32 {
-        let (computed, count) = self.compute_recursively(
+        let ((computed, count), _) = self.compute_recursively(
             &|tree: &Tree, (accumulated_squareness, count): (f64, usize)| {
                 let s = squareness(tree.rect.as_ref().unwrap());
-                (accumulated_squareness + s as f64, count + 1)
+                ((accumulated_squareness + s as f64, count + 1), false)
             },
             (0.0, 0),
         );
@@ -228,6 +248,18 @@ impl PartialEq for TreeView {
     }
 }
 
+fn fuzzy_contains(text: &str, words: &[&str]) -> bool {
+    let mut text = text.to_lowercase();
+    for word in words {
+        if let Some(index) = text.find(word) {
+            text = text[(index + word.len())..].to_string();
+        } else {
+            return false;
+        }
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use crate::arrangements::binary;
@@ -261,5 +293,22 @@ mod tests {
         binary::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
         let squareness = tree.compute_squareness();
         assert_eq!(squareness, 0.0);
+    }
+
+    #[test]
+    fn test_fuzzy_search() {
+        assert!(fuzzy_contains("hello world", &vec!["hello", "world"]));
+        assert!(!fuzzy_contains("hello world", &vec!["world", "hello"]));
+        assert!(fuzzy_contains("a b c", &vec!["a", "c"]));
+        assert!(fuzzy_contains("abc", &vec!["a", "c"]));
+        assert!(!fuzzy_contains("abc", &vec!["b", "a"]));
+        assert!(fuzzy_contains(
+            "ConfigurationManager",
+            &vec!["config", "man"]
+        ));
+        assert!(!fuzzy_contains(
+            "ConfigurationManager",
+            &vec!["config", "config"]
+        ));
     }
 }

@@ -13,5 +13,5 @@ pub struct Cli {
 }
 
 fn main() -> Result<(), AnyError> {
-    print_git_churn(Cli::parse().input_folder)
+    print_git_churn(Cli::parse().input_folder, None)
 }
