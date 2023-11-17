@@ -183,22 +183,23 @@ fn draw_path_text(
 
     let size_text = format!("{} {}", size, units);
     let text_width = measure_text(&size_text, None, font_size as u16, 1.0).width;
-    let metric_x = if let Some(level) = level_opt {
-        *node_name_widths.get(*level).unwrap()
-    } else {
-        node_name_widths.iter().rev().nth(1).unwrap().clone()
-    };
     let pad = 0.5 * font_size;
+    let index = if let Some(level) = level_opt {
+        if *level < node_name_widths.len() {
+            *level
+        } else {
+            node_name_widths.len() - 2
+        }
+    } else {
+        node_name_widths.len() - 2
+    };
+    let metric_x = node_name_widths.get(index).unwrap();
     draw_rectangle(
         top_left.x + metric_x,
         top_left.y + 1.5 * font_size,
         text_width + 2.0 * pad,
         1.5 * font_size,
-        COLORS[if let Some(level) = level_opt {
-            *level
-        } else {
-            node_name_widths.len() - 2
-        } % COLORS.len()],
+        COLORS[index % COLORS.len()],
     );
     draw_text(
         &size_text,
