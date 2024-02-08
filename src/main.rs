@@ -77,7 +77,7 @@ async fn main() -> Result<(), AnyError> {
 
     let (tree, units) = log_time!(
         compute_metrics(&input_folder, &metric, all_extensions, max_commits),
-        "computing metrics"
+        format!("computing metrics {:?}", metric)
     );
 
     let mut ui = Ui::new(tree, units, arrange, arrangement.clone(), padding);

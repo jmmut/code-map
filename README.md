@@ -8,6 +8,12 @@ You can also clone this repo, then [Install rust](https://www.rust-lang.org/tool
 
 If you cloned the repo, you can install the binary in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` for the available options.
 
+### Searching
+
+You can search for a file by typing a substring in the search box.
+Click on the box of press 'f' to start searching.
+The search is case-insensitive and fuzzy, so you can type `config man` to find `ConfigurationManager`.
+
 ## Metrics 
 
 You can choose different metrics to plot. Each metric assigns a number to each node in a tree. The tree, nodes and metrics can be computed from different sources, but the most common use case is to compute them from a directory tree, where each node is a directory or a file.
@@ -72,10 +78,10 @@ This arrangement is not great when a node has many children. The children will b
 ## Roadmap
 
 - UI
-  - [/] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
+  - [x] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
     - [x] right click to remove selection
   - [x] box to search for a file (substring)
-    - [ ] fuzzy search
+    - [/] fuzzy search
     - [ ] allow upper case letters in search
   - [/] other arrangements that don't draw very thin lines
   - [ ] zoom in
