@@ -179,7 +179,7 @@ fn draw_path_text(
         );
     }
 
-    let size_text = format!("{} {}", size, units);
+    let size_text = format_units(size, units);
     let text_width = measure_text(&size_text, None, font_size as u16, 1.0).width;
     let pad = 0.5 * font_size;
     let index = if let Some(level) = level_opt {
@@ -206,6 +206,23 @@ fn draw_path_text(
         font_size,
         BLACK,
     );
+}
+
+fn format_units(value: i64, units: &str) -> String {
+    let separator = " ";
+    let space_separated_number = value
+        .to_string()
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .collect::<Vec<&[u8]>>()
+        .join(separator.as_bytes());
+
+    format!(
+        "{} {}",
+        String::from_utf8(space_separated_number).unwrap(),
+        units
+    )
 }
 
 fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: &mut Option<usize>) {
