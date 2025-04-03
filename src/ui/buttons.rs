@@ -8,16 +8,16 @@ use macroquad::prelude::{
 };
 
 pub struct PressedButtons {
-    pub _refresh: bool,
+    pub refresh: bool,
     pub copied: bool,
 }
 pub fn draw_buttons(map_rect: Rect, font_size: f32) -> PressedButtons {
     let y = screen_height() - font_size * 3.5;
-    let (button_rect, copied) = draw_button("copy to clipboard", map_rect.x, y, font_size);
+    let (button_rect, copied) = draw_button("Copy to clipboard", map_rect.x, y, font_size);
 
     let next_x = map_rect.x + button_rect.w + font_size;
-    let (_button_rect, _refresh) = draw_button("refresh", next_x, y, font_size);
-    PressedButtons { _refresh, copied }
+    let (_button_rect, refresh) = draw_button("Refresh", next_x, y, font_size);
+    PressedButtons { refresh, copied }
 }
 
 fn draw_button(text: &str, x: f32, y: f32, font_size: f32) -> (Rect, bool) {
@@ -47,23 +47,3 @@ fn draw_button(text: &str, x: f32, y: f32, font_size: f32) -> (Rect, bool) {
     );
     (button_rect, pressed)
 }
-// pub fn render(&self) {
-//     draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, WHITE);
-//     if self.focused {
-//         draw_rectangle_lines(
-//             self.rect.x,
-//             self.rect.y,
-//             self.rect.w,
-//             self.rect.h,
-//             1.0,
-//             BLACK,
-//         );
-//     }
-//     draw_text(
-//         &self.text,
-//         self.rect.x + self.font_size * 0.5,
-//         self.rect.y + self.font_size,
-//         self.font_size,
-//         BLACK,
-//     );
-// }

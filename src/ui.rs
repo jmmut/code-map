@@ -34,6 +34,7 @@ pub struct Ui {
     width: f32,
     height: f32,
     padding: f32,
+    refresh: bool,
 }
 
 impl Ui {
@@ -64,6 +65,7 @@ impl Ui {
             height,
             padding,
             arrangement,
+            refresh: false,
         }
     }
 
@@ -121,6 +123,10 @@ impl Ui {
                 ctx.set_text(path).unwrap();
             }
         }
+        self.refresh = buttons.refresh;
+    }
+    pub fn should_refresh(&self) -> bool {
+        self.refresh
     }
 }
 

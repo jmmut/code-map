@@ -18,7 +18,7 @@ const DEFAULT_WINDOW_TITLE: &str = "Code Map";
 pub const GIT_VERSION: &str = git_version!(args = ["--tags"]);
 
 /// Plot hierarchical metrics like file sizes in a folder structure.
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(author, version = GIT_VERSION, about, long_about = None)]
 pub struct Cli {
     /// plot file sizes under this folder.
@@ -65,6 +65,19 @@ macro_rules! log_time {
 
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
+    let args = Cli::parse();
+    let mut ui = compute_ui(args.clone());
+    while should_continue() {
+        if ui.should_refresh() {
+            ui = compute_ui(args.clone());
+        }
+        ui.draw();
+        next_frame().await
+    }
+    Ok(())
+}
+
+fn compute_ui(args: Cli) -> Ui {
     let all_extensions = true;
     let Cli {
         input_folder,
@@ -73,8 +86,7 @@ async fn main() -> Result<(), AnyError> {
         metric,
         // all_extensions,
         max_commits,
-    } = Cli::parse();
-
+    } = args;
     let (tree, units) = log_time!(
         compute_metrics(&input_folder, &metric, all_extensions, max_commits),
         format!("computing metrics {:?}", metric)
@@ -86,14 +98,8 @@ async fn main() -> Result<(), AnyError> {
         "arrangement"
     );
     log_time!(log_counts(&ui.tree));
-
-    while should_continue() {
-        ui.draw();
-        next_frame().await
-    }
-    Ok(())
+    ui
 }
-
 fn should_continue() -> bool {
     let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
         && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
