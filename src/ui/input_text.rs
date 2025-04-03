@@ -1,7 +1,8 @@
-use std::collections::VecDeque;
-
 use macroquad::input::KeyCode;
-use macroquad::prelude::{draw_rectangle_lines, draw_text, Rect, BLACK, WHITE};
+use macroquad::prelude::{
+    draw_rectangle_lines, draw_text, mouse_position, Rect, Vec2, BLACK, DARKGRAY, GRAY, WHITE,
+};
+use std::collections::VecDeque;
 
 use crate::ui::key_queue::InputCharacter;
 use crate::ui::rect_utils::draw_rect;
@@ -42,7 +43,16 @@ impl<'a> InputText<'a> {
         }
     }
     pub fn render(&self) {
-        draw_rect(self.rect, WHITE);
+        let bg_color = if self.focused {
+            WHITE
+        } else {
+            if self.rect.contains(Vec2::from(mouse_position())) {
+                DARKGRAY
+            } else {
+                GRAY
+            }
+        };
+        draw_rect(self.rect, bg_color);
         if self.focused {
             draw_rectangle_lines(
                 self.rect.x,
@@ -58,7 +68,7 @@ impl<'a> InputText<'a> {
             self.rect.x + self.font_size * 0.5,
             self.rect.y + self.font_size,
             self.font_size,
-            BLACK,
+            if self.focused { BLACK } else { WHITE },
         );
     }
 }

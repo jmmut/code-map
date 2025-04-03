@@ -116,11 +116,11 @@ impl Ui {
         let buttons = draw_buttons(self.map_rect, self.font_size);
         if buttons.copied {
             if let Some(parts) = &self.selected {
-                let path = parts.last().unwrap().name.clone();
+                let path = parts.last().map_or("", |view| &view.name);
                 let ctx = ClipboardContext::new().unwrap();
                 // let old = ctx.get_text().unwrap();
                 // println!("copying {path} to clipboard, was {old}");
-                ctx.set_text(path).unwrap();
+                ctx.set_text(path.to_string()).unwrap();
             }
         }
         self.refresh = buttons.refresh;
