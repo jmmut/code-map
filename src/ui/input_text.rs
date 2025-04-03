@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 
 use macroquad::input::KeyCode;
-use macroquad::prelude::{draw_rectangle, draw_rectangle_lines, draw_text, Rect, BLACK, WHITE};
+use macroquad::prelude::{draw_rectangle_lines, draw_text, Rect, BLACK, WHITE};
 
 use crate::ui::key_queue::InputCharacter;
+use crate::ui::rect_utils::draw_rect;
 
 pub struct InputText<'a> {
     pub rect: Rect,
@@ -41,7 +42,7 @@ impl<'a> InputText<'a> {
         }
     }
     pub fn render(&self) {
-        draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, WHITE);
+        draw_rect(self.rect, WHITE);
         if self.focused {
             draw_rectangle_lines(
                 self.rect.x,

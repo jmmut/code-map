@@ -1,3 +1,4 @@
+use clipboard_rs::{Clipboard, ClipboardContext};
 use macroquad::math::f32;
 use macroquad::prelude::{
     clear_background, is_mouse_button_pressed, mouse_position, screen_height, screen_width,
@@ -5,10 +6,12 @@ use macroquad::prelude::{
 };
 
 use crate::tree::{Tree, TreeView};
+use crate::ui::buttons::draw_buttons;
 use crate::ui::map_and_path::choose_and_draw_map_and_path;
 use crate::ui::rect_utils::round_rect;
 use crate::ui::searcher::Searcher;
 
+mod buttons;
 mod input_text;
 mod key_queue;
 mod map_and_path;
@@ -84,6 +87,8 @@ impl Ui {
 
         self.searcher
             .draw_search(&self.tree, &self.keys.keycode_event_queue);
+
+        self.act_on_buttons();
     }
 
     fn maybe_rearrange(&mut self) {
@@ -104,11 +109,24 @@ impl Ui {
                 .position(get_searcher_rect(self.map_rect, self.font_size));
         }
     }
+
+    fn act_on_buttons(&mut self) {
+        let buttons = draw_buttons(self.map_rect, self.font_size);
+        if buttons.copied {
+            if let Some(parts) = &self.selected {
+                let path = parts.last().unwrap().name.clone();
+                let ctx = ClipboardContext::new().unwrap();
+                // let old = ctx.get_text().unwrap();
+                // println!("copying {path} to clipboard, was {old}");
+                ctx.set_text(path).unwrap();
+            }
+        }
+    }
 }
 
 fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
     let small_pad = font_size * 2.5;
-    let big_pad = font_size * 9.5;
+    let big_pad = font_size * 12.0;
     let map_rect = round_rect(Rect::new(
         small_pad,
         small_pad,

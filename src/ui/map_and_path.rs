@@ -1,40 +1,23 @@
+use crate::tree::{Tree, TreeView};
+use crate::ui::rect_utils::{draw_rect, is_rect_clicked, round_rect};
+use crate::ui::searcher::Searcher;
+use crate::ui::set_if_different_or_unset_if_same;
 use macroquad::color::Color;
+use macroquad::color_u8;
 use macroquad::math::f32;
 use macroquad::prelude::{
     draw_rectangle, draw_rectangle_lines, draw_text, measure_text, mouse_position, MouseButton,
     Rect, Vec2, BLACK, GRAY,
 };
 use std::collections::VecDeque;
-use macroquad::color_u8;
-use crate::tree::{Tree, TreeView};
-use crate::ui::rect_utils::{is_rect_clicked, round_rect};
-use crate::ui::searcher::Searcher;
-use crate::ui::set_if_different_or_unset_if_same;
 
 // HSV 238, 35, 98, rotating 47 Hue units https://supercolorpalette.com
 const COLORS_HEX: &[u32] = &[
-0xE1A2FA,
-0xFAA2CE,
-0xFABAA2,
-0xF6FAA2,
-0xB1FAA2,
-0xA2FAD8,
-0xA2D7FA,
-0xB2A2FA,
-0xF7A2FA,
-0xFAA2B8,
-0xFAD0A2,
-0xE0FAA2,
-0xA2FAAA,
-0xA2FAEE,
-0xA2C1FA,
-0xC8A2FA,
-0xFAA2E7,
-0xFAA2A2,
-0xFAE5A2,
-0xCAFAA2,
+    0xE1A2FA, 0xFAA2CE, 0xFABAA2, 0xF6FAA2, 0xB1FAA2, 0xA2FAD8, 0xA2D7FA, 0xB2A2FA, 0xF7A2FA,
+    0xFAA2B8, 0xFAD0A2, 0xE0FAA2, 0xA2FAAA, 0xA2FAEE, 0xA2C1FA, 0xC8A2FA, 0xFAA2E7, 0xFAA2A2,
+    0xFAE5A2, 0xCAFAA2,
 ];
-const COLORS_HEX_LENGTH :usize = COLORS_HEX.len();
+const COLORS_HEX_LENGTH: usize = COLORS_HEX.len();
 const COLORS: &[Color] = &from_hexes::<COLORS_HEX_LENGTH>(&COLORS_HEX);
 
 const fn from_hexes<const N: usize>(hexes: &[u32]) -> [Color; N] {
@@ -48,7 +31,7 @@ const fn from_hexes<const N: usize>(hexes: &[u32]) -> [Color; N] {
 }
 
 const fn from_hex(hex: u32) -> Color {
-    color_u8!(hex / 0x10000, hex / 0x100 %0x100, hex % 0x100, 255)
+    color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
 }
 
 pub fn choose_and_draw_map_and_path(
@@ -140,7 +123,7 @@ fn draw_path_color(
                 COLORS[i % COLORS.len()],
             );
         } else {
-            draw_rectangle(rect.x, rect.y, rect.w, rect.h, COLORS[i % COLORS.len()]);
+            draw_rect(rect, COLORS[i % COLORS.len()]);
         }
         if is_rect_clicked(&rect, MouseButton::Left) {
             set_if_different_or_unset_if_same(level_opt, i);
