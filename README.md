@@ -11,7 +11,7 @@ If you cloned the repo, you can install the binary in your PATH with `cargo inst
 ### Searching
 
 You can search for a file by typing a substring in the search box.
-Click on the box of press 'f' to start searching.
+Click on the box or press 'f' to start searching.
 The search is case-insensitive and fuzzy, so you can type `config man` to find `ConfigurationManager`.
 
 ## Metrics 
@@ -78,19 +78,19 @@ This arrangement is not great when a node has many children. The children will b
 ## Roadmap
 
 - UI
-  - [x] be able to click on a box and highlight only the parents (like click, backspace, backspace, enter)
-    - [x] right click to remove selection
+  - [x] be able to click on a box and highlight only the parents (like click a box, and click on the name of a parent)
+    - [x] click the same box or right click in the tree map to remove selection
   - [x] box to search for a file (substring)
-    - [/] fuzzy search
+    - [x] fuzzy search
     - [ ] allow upper case letters in search
-  - [/] other arrangements that don't draw very thin lines
+  - [x] other arrangements that don't draw very thin lines
   - [ ] zoom in
   - [x] clicking on the same path removes the level selection
 - cli/logs
   - [x] -a --arrangement 
   - [x] -m --metric (file size, line count, code complexity, etc.)
     - [x] --metric churn (`cargo run --example git_churn` for the data without the UI)
-      - [ ] allow processing only the last x commits
+      - [x] allow processing only the last x commits
     - [ ] --metric refactor (churn * line count)
   - [x] -x --all-file-extensions
   - [ ] -i --input-file (read counts from a file / stdin / sql dump)
@@ -98,3 +98,5 @@ This arrangement is not great when a node has many children. The children will b
   - [ ] aggregate counts of ignored files/extensions
       - [ ] list them with --verbose
   - [ ] --include-extensions
+  - [x] refresh computed metrics (e.g. you deleted some files)
+  - [x] copy path to clipboard
