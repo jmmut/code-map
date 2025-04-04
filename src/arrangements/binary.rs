@@ -100,8 +100,8 @@ fn average_squareness(rectangles: &[Rect]) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::arrangements::linear;
     use crate::arrangements::linear::tests::assert_float_eq;
+    use crate::arrangements::{golden, linear};
 
     use super::*;
 
@@ -189,14 +189,27 @@ mod tests {
         );
         let area_binary = area(&tree.children);
 
+        golden::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        let squareness_golden = average_squareness(
+            &tree
+                .children
+                .iter()
+                .map(|child| child.rect.unwrap())
+                .collect::<Vec<_>>(),
+        );
+        let area_golden = area(&tree.children);
+
         assert!(
             squareness_binary > squareness_linear,
             "{} < {}",
             squareness_binary,
             squareness_linear
         );
-        println!("squareness of square::arrange: {}", squareness_binary);
+        println!("squareness of binary::arrange: {}", squareness_binary);
+        println!("squareness of linear::arrange: {}", squareness_linear);
+        println!("squareness of golden::arrange: {}", squareness_golden);
         assert_float_eq(area_binary, area_linear);
+        assert_float_eq(area_binary, area_golden);
     }
 
     #[test]

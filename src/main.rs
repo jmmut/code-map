@@ -4,7 +4,7 @@ use clap::Parser;
 use git_version::git_version;
 use macroquad::prelude::*;
 
-use code_map::arrangements::{binary, linear};
+use code_map::arrangements::{binary, golden, linear};
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::metrics::Metrics;
 use code_map::tree::Tree;
@@ -25,8 +25,8 @@ pub struct Cli {
     #[arg(default_value = ".")]
     pub input_folder: PathBuf,
 
-    /// arrangement algorithm: linear or binary.
-    #[arg(short, long, default_value = "binary")]
+    /// arrangement algorithm: linear, binary or golden.
+    #[arg(short, long, default_value = "golden")]
     pub arrangement: String,
 
     /// metric to plot
@@ -161,6 +161,8 @@ fn arrange(padding: f32, arrangement: String, mut treemap: &mut Tree, available:
         linear::arrange(&mut treemap, available, padding);
     } else if arrangement == "binary" {
         binary::arrange(&mut treemap, available);
+    } else if arrangement == "golden" {
+        golden::arrange(&mut treemap, available);
     } else {
         panic!(
             "Unknown arrangement algorithm: {}. valid ones are: linear, binary",

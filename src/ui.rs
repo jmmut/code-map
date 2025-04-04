@@ -124,6 +124,9 @@ impl Ui {
             }
         }
         self.refresh = buttons.refresh;
+        if buttons.squareness {
+            println!("squareness: {}", self.tree.compute_squareness())
+        }
     }
     pub fn should_refresh(&self) -> bool {
         self.refresh

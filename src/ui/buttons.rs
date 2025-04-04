@@ -10,14 +10,23 @@ use macroquad::prelude::{
 pub struct PressedButtons {
     pub refresh: bool,
     pub copied: bool,
+    pub squareness: bool,
 }
+
 pub fn draw_buttons(map_rect: Rect, font_size: f32) -> PressedButtons {
     let y = screen_height() - font_size * 3.5;
     let (button_rect, copied) = draw_button("Copy to clipboard", map_rect.x, y, font_size);
 
-    let next_x = map_rect.x + button_rect.w + font_size;
+    let next_x = button_rect.x + button_rect.w + font_size;
     let (_button_rect, refresh) = draw_button("Refresh", next_x, y, font_size);
-    PressedButtons { refresh, copied }
+
+    // let next_x = button_rect.x + button_rect.w + font_size;
+    // let (_button_rect, squareness) = draw_button("Compute squareness", next_x, y, font_size);
+    PressedButtons {
+        refresh,
+        copied,
+        squareness: false,
+    }
 }
 
 fn draw_button(text: &str, x: f32, y: f32, font_size: f32) -> (Rect, bool) {
