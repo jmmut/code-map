@@ -35,6 +35,7 @@ pub struct Ui {
     height: f32,
     padding: f32,
     refresh: bool,
+    previous_mouse: Vec2,
 }
 
 impl Ui {
@@ -66,12 +67,20 @@ impl Ui {
             padding,
             arrangement,
             refresh: false,
+            previous_mouse: Vec2::new(-1.0, -1.0),
         }
     }
 
     pub fn draw(&mut self) {
         self.maybe_rearrange();
+
+        let new_mouse = Vec2::from(mouse_position());
+        println!("mouse: {}", new_mouse);
         self.keys.capture_keys_this_frame();
+        if self.keys.keycode_event_queue.len() == 0 && self.previous_mouse == new_mouse {
+            return;
+        }
+        self.previous_mouse = new_mouse;
 
         clear_background(LIGHTGRAY);
 
