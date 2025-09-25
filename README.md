@@ -2,19 +2,18 @@
 
 ## Running this project
 
-You can download a pre-compiled binary for Mac from https://s3.console.aws.amazon.com/s3/buckets/intrasonics-releases?prefix=code-map/&region=eu-west-1
+You can clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
 
-You can also clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
-
-If you cloned the repo, you can install the binary in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` for the available options.
+Then you can install the binary in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` to see the available options.
 
 ### Searching
 
 You can search for a file by typing a substring in the search box.
 Click on the box or press 'f' to start searching.
 The search is case-insensitive and fuzzy, so you can type `config man` to find `ConfigurationManager`.
+From the dropdown you can only select the first entry, selecting others or moving the cursor is not implemented
 
-## Metrics 
+## Metrics
 
 You can choose different metrics to plot. Each metric assigns a number to each node in a tree. The tree, nodes and metrics can be computed from different sources, but the most common use case is to compute them from a directory tree, where each node is a directory or a file.
 
@@ -74,6 +73,11 @@ Each sub-node will arrange their own sub-sub-nodes in the same way.
 
 This arrangement is not great when a node has many children. The children will be plotted as very thin lines.
 
+### Golden
+
+Manually tweaked version of the binary arrangement.
+It tries to maximize squareness by using an empirically chosen ratio of how many items to put in the first division of a bigger rectangle.
+It might be worse than binary on some dataseets.
 
 ## Roadmap
 
@@ -83,6 +87,7 @@ This arrangement is not great when a node has many children. The children will b
   - [x] box to search for a file (substring)
     - [x] fuzzy search
     - [ ] allow upper case letters in search
+    - [ ] allow using arrows or clicks to select any entry other than the first one
   - [x] other arrangements that don't draw very thin lines
   - [ ] zoom in
   - [x] clicking on the same path removes the level selection
