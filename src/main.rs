@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -21,11 +22,15 @@ pub const GIT_VERSION: &str = git_version!(args = ["--tags"]);
 #[derive(Parser, Clone)]
 #[command(author, version = GIT_VERSION, about, long_about = None)]
 pub struct Cli {
-    /// plot file sizes under this folder.
+    /// plot file sizes under this folder
     #[arg(default_value = ".")]
     pub input_folder: PathBuf,
 
-    /// arrangement algorithm: linear, binary or golden.
+    /// exclude these directories or files. repeat '-e' for each exclusion
+    #[arg(short, long)]
+    pub exclude: Vec<String>,
+
+    /// arrangement algorithm: linear, binary or golden
     #[arg(short, long, default_value = "golden")]
     pub arrangement: String,
 
@@ -37,7 +42,7 @@ pub struct Cli {
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
     //
-    /// Padding in pixels between hierarchies (e.g. 4) (only for linear arrangement).
+    /// Padding in pixels between hierarchies (e.g. 4) (only for linear arrangement)
     #[arg(short, long, default_value = "0")]
     pub padding: f32,
 
@@ -81,14 +86,22 @@ fn compute_ui(args: Cli) -> Ui {
     let all_extensions = true;
     let Cli {
         input_folder,
+        exclude,
         padding,
         arrangement,
         metric,
         // all_extensions,
         max_commits,
     } = args;
+    let exclude = HashSet::from_iter(exclude);
     let (tree, units) = log_time!(
-        compute_metrics(&input_folder, &metric, all_extensions, max_commits),
+        compute_metrics(
+            &input_folder,
+            &metric,
+            all_extensions,
+            max_commits,
+            &exclude
+        ),
         format!("computing metrics {:?}", metric)
     );
 
@@ -123,15 +136,17 @@ fn compute_metrics(
     metric: &Metrics,
     all_extensions: bool,
     max_commits: Option<usize>,
+    exclude: &HashSet<String>,
 ) -> (Tree, &'static str) {
     let (tree, units) = match metric {
         Metrics::BytesPerFile => (
             if all_extensions {
-                metrics::bytes_per_file::bytes_per_file(&input_folder).unwrap()
+                metrics::bytes_per_file::bytes_per_file(&input_folder, exclude).unwrap()
             } else {
                 metrics::bytes_per_file::bytes_per_file_with_extension(
                     &input_folder,
                     TEXT_FILE_EXTENSIONS,
+                    exclude,
                 )
                 .unwrap()
                 .unwrap()
