@@ -1,15 +1,16 @@
+use crate::log_time;
+use crate::tree::{Tree, TreeView};
+use crate::ui::buttons::draw_buttons;
+use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cached};
+use crate::ui::rect_utils::{draw_rect, round_rect};
+use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
 use macroquad::math::f32;
 use macroquad::prelude::{
-    clear_background, is_mouse_button_pressed, mouse_position, screen_height, screen_width,
-    MouseButton, Rect, Vec2, LIGHTGRAY,
+    clear_background, draw_text, is_mouse_button_pressed, measure_text, mouse_position,
+    screen_height, screen_width, vec2, Color, FilterMode, MouseButton, Rect, RenderTarget, Vec2,
+    BLACK, LIGHTGRAY,
 };
-
-use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::draw_buttons;
-use crate::ui::map_and_path::choose_and_draw_map_and_path;
-use crate::ui::rect_utils::round_rect;
-use crate::ui::searcher::Searcher;
 
 mod buttons;
 mod input_text;
@@ -35,6 +36,8 @@ pub struct Ui {
     height: f32,
     padding: f32,
     refresh: bool,
+    refresh_lines: bool,
+    rendered_lines: RenderTarget,
 }
 
 impl Ui {
@@ -51,6 +54,9 @@ impl Ui {
         let map_rect = get_map_rect(width, height, font_size);
 
         let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
+
+        let render_target = macroquad::prelude::render_target(width as u32, height as u32);
+        render_target.texture.set_filter(FilterMode::Nearest);
         Self {
             tree,
             units: units.to_string(),
@@ -66,24 +72,46 @@ impl Ui {
             padding,
             arrangement,
             refresh: false,
+            refresh_lines: true,
+            rendered_lines: render_target,
         }
     }
 
     pub fn draw(&mut self) {
+        if self.refresh_lines {
+            log_time!(
+                draw_nodes_lines_cached(
+                    &self.tree,
+                    self.map_rect,
+                    self.level,
+                    self.font_size,
+                    self.width,
+                    self.height,
+                    &mut self.rendered_lines
+                ),
+                "draw_nodes_lines"
+            );
+            self.refresh_lines = false;
+        }
         self.maybe_rearrange();
         self.keys.capture_keys_this_frame();
 
         clear_background(LIGHTGRAY);
 
+        // log_time!(
         choose_and_draw_map_and_path(
-            &self.tree,
-            &self.units,
-            self.map_rect,
-            self.font_size,
-            &mut self.searcher,
-            &mut self.selected,
-            &mut self.level,
-        );
+                &self.tree,
+                &self.units,
+                self.map_rect,
+                self.font_size,
+                &mut self.refresh_lines,
+                &mut self.searcher,
+                &mut self.selected,
+                &mut self.level,
+                &mut self.rendered_lines,
+            )
+        // , "choose_and_draw_map_and_path" )
+        ;
 
         select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
 
@@ -91,6 +119,29 @@ impl Ui {
             .draw_search(&self.tree, &self.keys.keycode_event_queue);
 
         self.act_on_buttons();
+        if self.refresh_lines || self.refresh {
+            self.draw_regenerate_warning();
+        }
+    }
+
+    fn draw_regenerate_warning(&mut self) {
+        let font_size = self.font_size * 4.0;
+        let text = "Re-drawing grid...";
+        let measures = measure_text(text, None, font_size as u16, 1.0);
+        let horizontal_pad = font_size * 1.0;
+        let Vec2 { x, y } =
+            self.map_rect.center() - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
+
+        let measure = measure_text(text, None, font_size as u16, 1.0);
+        let button_rect = Rect::new(x, y, measure.width + horizontal_pad * 2.0, font_size * 1.5);
+        draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
+        draw_text(
+            text,
+            button_rect.x + horizontal_pad,
+            button_rect.y + font_size,
+            font_size,
+            BLACK,
+        );
     }
 
     fn maybe_rearrange(&mut self) {
@@ -109,6 +160,16 @@ impl Ui {
             );
             self.searcher
                 .position(get_searcher_rect(self.map_rect, self.font_size));
+
+            let render_target =
+                // log_time!(
+                macroquad::prelude::render_target(self.width as u32, self.height as u32)
+                // , "reallocate lines texture")
+            ;
+            render_target.texture.set_filter(FilterMode::Nearest);
+            self.rendered_lines = render_target;
+            self.refresh = true;
+            self.refresh_lines = true;
         }
     }
 
@@ -130,6 +191,9 @@ impl Ui {
     }
     pub fn should_refresh(&self) -> bool {
         self.refresh
+    }
+    pub fn is_searcher_focused(&self) -> bool {
+        self.searcher.is_focused()
     }
 }
 

@@ -163,4 +163,7 @@ impl Searcher {
             self.focused = false;
         }
     }
+    pub fn is_focused(&self) -> bool {
+        self.focused
+    }
 }

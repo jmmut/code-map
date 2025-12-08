@@ -10,7 +10,7 @@ use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::metrics::Metrics;
 use code_map::tree::Tree;
 use code_map::ui::Ui;
-use code_map::{metrics, AnyError};
+use code_map::{log_time, metrics, AnyError};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -51,32 +51,18 @@ pub struct Cli {
     pub max_commits: Option<usize>,
 }
 
-macro_rules! log_time {
-    ($e:expr $(,)?) => {{
-        let time_before = std::time::Instant::now();
-        let result = $e;
-        let time_after = std::time::Instant::now();
-        info!("{} took {:?}", stringify!($e), time_after - time_before);
-        result
-    }};
-    ($e:expr, $name:expr $(,)?) => {{
-        let time_before = std::time::Instant::now();
-        let result = $e;
-        let time_after = std::time::Instant::now();
-        info!("{} took {:?}", $name, time_after - time_before);
-        result
-    }};
-}
-
 #[macroquad::main(window_conf)]
 async fn main() -> Result<(), AnyError> {
     let args = Cli::parse();
     let mut ui = compute_ui(args.clone());
-    while should_continue() {
+    while should_continue(&ui) {
         if ui.should_refresh() {
-            ui = compute_ui(args.clone());
+            ui = log_time!(compute_ui(args.clone()), "rearrange");
         }
-        ui.draw();
+        // log_time!(
+        ui.draw()
+        // )
+        ;
         next_frame().await
     }
     Ok(())
@@ -113,12 +99,16 @@ fn compute_ui(args: Cli) -> Ui {
     log_time!(log_counts(&ui.tree));
     ui
 }
-fn should_continue() -> bool {
-    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
-        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
-    let escape_pressed = is_key_down(KeyCode::Escape);
-    let should_quit = ctrl_q_pressed || escape_pressed;
-    !should_quit
+fn should_continue(ui: &Ui) -> bool {
+    if ui.is_searcher_focused() {
+        true
+    } else {
+        let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
+            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
+        let escape_pressed = is_key_down(KeyCode::Escape);
+        let should_quit = ctrl_q_pressed || escape_pressed;
+        !should_quit
+    }
 }
 
 fn window_conf() -> Conf {

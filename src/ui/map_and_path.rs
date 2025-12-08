@@ -6,8 +6,9 @@ use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::math::f32;
 use macroquad::prelude::{
-    draw_rectangle, draw_rectangle_lines, draw_text, measure_text, mouse_position, MouseButton,
-    Rect, Vec2, BLACK, GRAY,
+    clear_background, draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text,
+    mouse_position, set_camera, set_default_camera, vec2, Camera2D, MouseButton, Rect,
+    RenderTarget, Vec2, BLACK, GRAY, WHITE,
 };
 use std::collections::VecDeque;
 
@@ -39,20 +40,38 @@ pub fn choose_and_draw_map_and_path(
     units: &str,
     map_rect: Rect,
     font_size: f32,
+    refresh_lines: &mut bool,
     searcher: &mut Searcher,
     selected: &mut Option<Vec<TreeView>>,
     level: &mut Option<usize>,
+    rendered_lines: &mut RenderTarget,
 ) {
     if let Some(nested_nodes) = searcher.get_new_result() {
         *selected = Some(nested_nodes.clone());
-        draw_colored_map_and_path(units, map_rect, font_size, &nested_nodes, level);
+        draw_colored_map_and_path(
+            units,
+            map_rect,
+            font_size,
+            &nested_nodes,
+            level,
+            refresh_lines,
+        );
+        // *refresh_lines = true;
     } else if let Some(selected_nodes) = &selected {
-        draw_colored_map_and_path(units, map_rect, font_size, &selected_nodes, level);
+        draw_colored_map_and_path(
+            units,
+            map_rect,
+            font_size,
+            &selected_nodes,
+            level,
+            refresh_lines,
+        );
+        // refresh_lines = true;
     } else {
-        draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level);
+        draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level, refresh_lines);
     }
 
-    draw_nodes_lines(&tree, map_rect, *level, font_size);
+    draw_texture(rendered_lines.texture, 0., 0., WHITE);
 }
 
 fn draw_colored_map_and_path(
@@ -61,9 +80,17 @@ fn draw_colored_map_and_path(
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: &mut Option<usize>,
+    refresh_lines: &mut bool,
 ) {
     if nested_nodes.len() > 0 {
-        draw_path(units, map_rect, font_size, nested_nodes, level_opt);
+        draw_path(
+            units,
+            map_rect,
+            font_size,
+            nested_nodes,
+            level_opt,
+            refresh_lines,
+        );
         draw_colored_selected_in_map(nested_nodes, level_opt);
     }
 }
@@ -74,11 +101,18 @@ fn draw_path(
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: &mut Option<usize>,
+    refresh_lines: &mut bool,
 ) {
     let path_y = map_rect.y + map_rect.h + font_size * 4.5;
     let node_name_widths = compute_name_widths(nested_nodes, font_size);
     let top_left = Vec2::new(map_rect.x, path_y);
-    draw_path_color(top_left, font_size, &node_name_widths, level_opt);
+    draw_path_color(
+        top_left,
+        font_size,
+        &node_name_widths,
+        level_opt,
+        refresh_lines,
+    );
     draw_path_text(
         units,
         top_left,
@@ -86,6 +120,7 @@ fn draw_path(
         nested_nodes,
         level_opt,
         node_name_widths,
+        refresh_lines,
     );
 }
 
@@ -104,6 +139,7 @@ fn draw_path_color(
     font_size: f32,
     node_name_widths: &VecDeque<f32>,
     level_opt: &mut Option<usize>,
+    refresh_lines: &mut bool,
 ) {
     let mut previous_width = 0.0;
     for (i, width) in node_name_widths.iter().enumerate() {
@@ -127,6 +163,7 @@ fn draw_path_color(
         }
         if is_rect_clicked(&rect, MouseButton::Left) {
             set_if_different_or_unset_if_same(level_opt, i);
+            *refresh_lines = true;
         }
         previous_width = *width;
     }
@@ -139,12 +176,14 @@ fn draw_path_text(
     nested_nodes: &Vec<TreeView>,
     level_opt: &mut Option<usize>,
     mut node_name_widths: VecDeque<f32>,
+    refresh_lines: &mut bool,
 ) {
     node_name_widths.push_front(0.0);
     let previous_width = *node_name_widths.back().unwrap();
     let path_rect = Rect::new(top_left.x, top_left.y, previous_width, 1.5 * font_size);
     if is_rect_clicked(&path_rect, MouseButton::Right) {
         *level_opt = None;
+        *refresh_lines = true;
     }
     let deepest_child = nested_nodes.last().unwrap();
     let size = if let Some(level) = level_opt {
@@ -257,6 +296,7 @@ fn draw_hovered_nested_nodes(
     map_rect: Rect,
     font_size: f32,
     level: &mut Option<usize>,
+    refresh_lines: &mut bool,
 ) {
     let mouse_position = Vec2::from(mouse_position());
     if map_rect.contains(mouse_position) {
@@ -267,8 +307,29 @@ fn draw_hovered_nested_nodes(
             font_size,
             &TreeView::from_nodes(&nodes_pointed),
             level,
+            refresh_lines,
         );
     }
+}
+
+pub fn draw_nodes_lines_cached(
+    tree: &Tree,
+    map_rect: Rect,
+    selected: Option<usize>,
+    font_size: f32,
+    width: f32,
+    height: f32,
+    rendered_lines: &mut RenderTarget,
+) {
+    set_camera(&Camera2D {
+        target: vec2(width * 0.5, height * 0.5),
+        zoom: vec2(1.0 / width * 2.0, 1.0 / height * 2.0),
+        render_target: Some(rendered_lines.clone()),
+        ..Default::default()
+    });
+    clear_background(Color::new(0.0, 0.0, 0.0, 0.0));
+    draw_nodes_lines(tree, map_rect, selected, font_size);
+    set_default_camera();
 }
 
 fn draw_nodes_lines(tree: &Tree, map_rect: Rect, selected: Option<usize>, font_size: f32) {
