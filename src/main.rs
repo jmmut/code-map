@@ -99,16 +99,18 @@ fn compute_ui(args: Cli) -> Ui {
     log_time!(log_counts(&ui.tree));
     ui
 }
-fn should_continue(ui: &Ui) -> bool {
-    if ui.is_searcher_focused() {
-        true
-    } else {
+fn should_continue(_ui: &Ui) -> bool {
+    // if _ui.is_searcher_focused() {
+    //     true
+    // } else {
         let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
             && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
-        let escape_pressed = is_key_down(KeyCode::Escape);
-        let should_quit = ctrl_q_pressed || escape_pressed;
+        // let escape_pressed = is_key_down(KeyCode::Escape);
+        let should_quit = ctrl_q_pressed 
+            // || escape_pressed
+            ;
         !should_quit
-    }
+    // }
 }
 
 fn window_conf() -> Conf {

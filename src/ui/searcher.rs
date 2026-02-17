@@ -93,6 +93,10 @@ impl Searcher {
             self.result_changed = true;
         } else if is_key_pressed(KeyCode::Enter) {
             self.set_focus(false);
+        } else if is_key_pressed(KeyCode::Escape) {
+            self.set_focus(false);
+            self.result_changed = true;
+            self.nested_results = None;
         } else if is_mouse_button_pressed(MouseButton::Left)
             || is_mouse_button_pressed(MouseButton::Right)
         {
