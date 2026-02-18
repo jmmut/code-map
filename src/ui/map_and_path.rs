@@ -362,25 +362,27 @@ fn draw_nodes_lines_recursive(
         //     font_size,
         //     BLACK,
         // );
-        for child in &node.children {
-            draw_nodes_lines_recursive(
-                child,
-                map_rect,
-                level,
-                font_size,
-                thickness,
-                color_focus,
-                color_details,
-                current_level + 1,
-            );
-        }
-
         let Rect { x, y, w, h } = round_rect(rect);
-        let color = if level.is_some_and(|level| current_level > level) {
-            color_details
-        } else {
-            color_focus
-        };
-        draw_rectangle_lines(x, y, w, h, thickness, color);
+        if w >= 1.0 && h >= 1.0 {
+            for child in &node.children {
+                draw_nodes_lines_recursive(
+                    child,
+                    map_rect,
+                    level,
+                    font_size,
+                    thickness,
+                    color_focus,
+                    color_details,
+                    current_level + 1,
+                );
+            }
+
+            let color = if level.is_some_and(|level| current_level > level) {
+                color_details
+            } else {
+                color_focus
+            };
+            draw_rectangle_lines(x, y, w, h, thickness, color);
+        }
     }
 }
