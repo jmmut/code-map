@@ -1,6 +1,6 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::draw_buttons;
+use crate::ui::buttons::{Buttons, draw_buttons, interact};
 use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cached};
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
@@ -40,10 +40,14 @@ pub struct Ui {
     refresh_lines: bool,
     rendered_lines: RenderTarget,
     should_quit: bool,
+    buttons: Buttons,
 }
 
 pub enum Event {
     Quit,
+    RefreshMetrics,
+    CopyToClipboard,
+    Squareness,
 }
 
 impl Ui {
@@ -63,6 +67,7 @@ impl Ui {
 
         let render_target = macroquad::prelude::render_target(width as u32, height as u32);
         render_target.texture.set_filter(FilterMode::Nearest);
+        let buttons = Buttons::new(vec2(width, height), font_size);
         Self {
             tree,
             units: units.to_string(),
@@ -81,6 +86,7 @@ impl Ui {
             refresh_lines: true,
             rendered_lines: render_target,
             should_quit: false,
+            buttons,
         }
     }
     pub fn react(&mut self) {
@@ -90,6 +96,21 @@ impl Ui {
                 Event::Quit => {
                     self.should_quit = true;
                 }
+                Event::RefreshMetrics => {
+                    self.refresh = true;
+                }
+                Event::CopyToClipboard => {
+                    if let Some(parts) = &self.selected {
+                        let path = parts.last().map_or("", |view| &view.name);
+                        let ctx = ClipboardContext::new().unwrap();
+                        // let old = ctx.get_text().unwrap();
+                        // println!("copying {path} to clipboard, was {old}");
+                        ctx.set_text(path.to_string()).unwrap();
+                    }
+                }
+                Event::Squareness => {
+                    println!("squareness: {}", self.tree.compute_squareness())
+                }
             }
         }
     }
@@ -97,6 +118,12 @@ impl Ui {
         let mut events = vec![];
         if should_quit() {
             events.push(Event::Quit)
+        }
+        if interact(&mut self.buttons.copy_to_clipboard).is_clicked() {
+            events.push(Event::CopyToClipboard);
+        }
+        if interact(&mut self.buttons.refresh).is_clicked() {
+            events.push(Event::RefreshMetrics);
         }
         events
     }
@@ -144,7 +171,9 @@ impl Ui {
         self.searcher
             .draw_search(&self.tree, &self.keys.keycode_event_queue);
 
-        self.act_on_buttons();
+        // self.act_on_buttons();
+        self.buttons.draw();
+
         if self.refresh_lines || self.refresh {
             self.draw_regenerate_warning();
         }
@@ -198,23 +227,6 @@ impl Ui {
             self.refresh_lines = true;
         }
     }
-
-    fn act_on_buttons(&mut self) {
-        let buttons = draw_buttons(self.map_rect, self.font_size);
-        if buttons.copied {
-            if let Some(parts) = &self.selected {
-                let path = parts.last().map_or("", |view| &view.name);
-                let ctx = ClipboardContext::new().unwrap();
-                // let old = ctx.get_text().unwrap();
-                // println!("copying {path} to clipboard, was {old}");
-                ctx.set_text(path.to_string()).unwrap();
-            }
-        }
-        self.refresh = buttons.refresh;
-        if buttons.squareness {
-            println!("squareness: {}", self.tree.compute_squareness())
-        }
-    }
     pub fn should_refresh(&self) -> bool {
         self.refresh
     }
@@ -242,7 +254,7 @@ fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
     let big_pad = big_pad(font_size);
     let map_rect = round_rect(Rect::new(
         small_pad,
-        small_pad,
+        small_pad + 20.0,
         width - 2.0 * small_pad,
         height - small_pad - big_pad,
     ));

@@ -62,6 +62,9 @@ async fn fallible_main() -> Result<(), AnyError> {
     let mut ui = compute_ui(args.clone())?;
     loop {
         ui.react();
+        if ui.should_quit() {
+            break;
+        }
         if ui.should_refresh() {
             ui = log_time!(compute_ui(args.clone())?, "rearrange");
         }
@@ -69,9 +72,6 @@ async fn fallible_main() -> Result<(), AnyError> {
         ui.draw()
         // )
         ;
-        if ui.should_quit() {
-            break;
-        }
         next_frame().await
     }
     Ok(())
