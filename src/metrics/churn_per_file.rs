@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use crate::git_churn::{git_churn, FileChurn};
-use crate::tree::Tree;
 use crate::AnyError;
+use crate::git_churn::{FileChurn, git_churn};
+use crate::tree::Tree;
 
 pub fn git_churn_per_file(folder: PathBuf, max_commits: Option<usize>) -> Result<Tree, AnyError> {
     let file_churns = git_churn(folder.clone(), max_commits)?;

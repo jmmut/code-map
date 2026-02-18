@@ -4,9 +4,9 @@ use std::path::{Path, PathBuf};
 
 use macroquad::prelude::{error, warn};
 
+use crate::AnyError;
 use crate::metrics::bytes_per_file::has_allowed_extension;
 use crate::tree::Tree;
-use crate::AnyError;
 
 #[rustfmt::skip]
 pub const TEXT_FILE_EXTENSIONS: &[&str] = &[

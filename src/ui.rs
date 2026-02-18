@@ -7,9 +7,9 @@ use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
 use macroquad::math::f32;
 use macroquad::prelude::{
-    clear_background, draw_text, is_mouse_button_pressed, measure_text, mouse_position,
-    screen_height, screen_width, vec2, Color, FilterMode, MouseButton, Rect, RenderTarget, Vec2,
-    BLACK, LIGHTGRAY,
+    BLACK, Color, FilterMode, LIGHTGRAY, MouseButton, Rect, RenderTarget, Vec2, clear_background,
+    draw_text, is_mouse_button_pressed, measure_text, mouse_position, screen_height, screen_width,
+    vec2,
 };
 
 mod buttons;

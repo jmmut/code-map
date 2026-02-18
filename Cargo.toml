@@ -1,7 +1,7 @@
 [package]
 name = "code-map"
 version = "0.0.0" # unused, in the CLI we show the git tag version by using the git-version crate
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

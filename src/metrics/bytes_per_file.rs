@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use macroquad::prelude::{error, info, warn};
 
-use crate::tree::Tree;
 use crate::AnyError;
+use crate::tree::Tree;
 
 pub fn bytes_per_files(
     parent_name: String,

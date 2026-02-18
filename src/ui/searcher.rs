@@ -56,6 +56,18 @@ impl Searcher {
             None
         }
     }
+    pub fn update_selected(&mut self, selected: &mut Option<Vec<TreeView>>) {
+        if self.result_changed {
+            self.result_changed = false;
+            if let Some(results) = self.nested_results.take()
+                && results.len() > 0
+            {
+                *selected = Some(results);
+            } else {
+                *selected = None;
+            }
+        }
+    }
 
     pub fn draw_search(&mut self, treemap: &Tree, keys: &VecDeque<InputCharacter>) {
         self.draw_search_box(keys, treemap);
@@ -85,13 +97,14 @@ impl Searcher {
         input_text.interact(self.focused);
         input_text.render();
 
-        let should_search = previous_search != self.search_word;
+        let mut should_search = previous_search != self.search_word;
         self.result_changed = should_search;
 
-        if is_key_pressed(KeyCode::F) {
-            self.set_focus(true);
+        if !self.is_focused() && is_key_pressed(KeyCode::F) {
+            should_search = true;
             self.result_changed = true;
-        } else if is_key_pressed(KeyCode::Enter) {
+            self.set_focus(true);
+        } else if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter) {
             self.set_focus(false);
         } else if is_key_pressed(KeyCode::Escape) {
             self.set_focus(false);

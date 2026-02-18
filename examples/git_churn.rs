@@ -1,6 +1,6 @@
 use clap::Parser;
-use code_map::git_churn::print_git_churn;
 use code_map::AnyError;
+use code_map::git_churn::print_git_churn;
 use std::path::PathBuf;
 
 /// Measure git churn: how many times each file has been changed.

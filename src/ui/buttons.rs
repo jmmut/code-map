@@ -3,8 +3,8 @@ use macroquad::color::{BLACK, DARKGRAY, GRAY, WHITE};
 use macroquad::input::mouse_position;
 use macroquad::math::{Rect, Vec2};
 use macroquad::prelude::{
-    draw_text, is_mouse_button_down, is_mouse_button_pressed, measure_text, screen_height,
-    MouseButton,
+    MouseButton, draw_text, is_mouse_button_down, is_mouse_button_pressed, measure_text,
+    screen_height,
 };
 
 pub struct PressedButtons {

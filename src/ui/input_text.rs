@@ -1,6 +1,6 @@
 use macroquad::input::KeyCode;
 use macroquad::prelude::{
-    draw_rectangle_lines, draw_text, mouse_position, Rect, Vec2, BLACK, DARKGRAY, GRAY, WHITE,
+    BLACK, DARKGRAY, GRAY, Rect, Vec2, WHITE, draw_rectangle_lines, draw_text, mouse_position,
 };
 use std::collections::VecDeque;
 

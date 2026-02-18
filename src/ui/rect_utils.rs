@@ -1,5 +1,5 @@
 use macroquad::prelude::{
-    draw_rectangle, is_mouse_button_pressed, mouse_position, Color, MouseButton, Rect, Vec2,
+    Color, MouseButton, Rect, Vec2, draw_rectangle, is_mouse_button_pressed, mouse_position,
 };
 
 /// I think macroquad will draw blurry pixels if the position or size of a rectangle is not rounded.

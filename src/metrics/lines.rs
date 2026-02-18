@@ -6,10 +6,10 @@ use std::path::{Path, PathBuf};
 use ignore::gitignore::Gitignore;
 use macroquad::prelude::{error, warn};
 
+use crate::AnyError;
 use crate::metrics::bytes_per_file::has_allowed_extension;
 use crate::metrics::word_mentions::{CODE_FILE_EXTENSIONS, TEXT_FILE_EXTENSIONS};
 use crate::tree::Tree;
-use crate::AnyError;
 
 pub fn lines_per_file(folder: &PathBuf) -> Result<Option<Tree>, AnyError> {
     lines_per_file_recursive(folder, None)

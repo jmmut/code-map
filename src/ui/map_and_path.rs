@@ -6,9 +6,9 @@ use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::math::f32;
 use macroquad::prelude::{
-    clear_background, draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text,
-    mouse_position, set_camera, set_default_camera, vec2, Camera2D, MouseButton, Rect,
-    RenderTarget, Vec2, BLACK, GRAY, WHITE,
+    BLACK, Camera2D, GRAY, MouseButton, Rect, RenderTarget, Vec2, WHITE, clear_background,
+    draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text, mouse_position,
+    set_camera, set_default_camera, vec2,
 };
 use std::collections::VecDeque;
 
@@ -46,18 +46,8 @@ pub fn choose_and_draw_map_and_path(
     level: &mut Option<usize>,
     rendered_lines: &mut RenderTarget,
 ) {
-    if let Some(nested_nodes) = searcher.get_new_result() {
-        *selected = Some(nested_nodes.clone());
-        draw_colored_map_and_path(
-            units,
-            map_rect,
-            font_size,
-            &nested_nodes,
-            level,
-            refresh_lines,
-        );
-        // *refresh_lines = true;
-    } else if let Some(selected_nodes) = &selected {
+    searcher.update_selected(selected);
+    if let Some(selected_nodes) = &selected {
         draw_colored_map_and_path(
             units,
             map_rect,

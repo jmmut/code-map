@@ -6,11 +6,11 @@ use git_version::git_version;
 use macroquad::prelude::*;
 
 use code_map::arrangements::{binary, golden, linear};
-use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::metrics::Metrics;
+use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::tree::Tree;
 use code_map::ui::Ui;
-use code_map::{log_time, metrics, AnyError};
+use code_map::{AnyError, log_time, metrics};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
 const DEFAULT_WINDOW_HEIGHT: i32 = 675;
@@ -103,13 +103,13 @@ fn should_continue(_ui: &Ui) -> bool {
     // if _ui.is_searcher_focused() {
     //     true
     // } else {
-        let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
-            && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
-        // let escape_pressed = is_key_down(KeyCode::Escape);
-        let should_quit = ctrl_q_pressed 
+    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
+        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
+    // let escape_pressed = is_key_down(KeyCode::Escape);
+    let should_quit = ctrl_q_pressed
             // || escape_pressed
             ;
-        !should_quit
+    !should_quit
     // }
 }
 
