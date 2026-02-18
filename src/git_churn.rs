@@ -21,8 +21,22 @@ pub fn print_git_churn(path: PathBuf, max_commits: Option<usize>) -> Result<(), 
     Ok(())
 }
 
+mod ansi {
+    pub const BOLD: &str = "\x1b[1m";
+    pub const BOLD_OFF: &str = "\x1b[22m";
+    pub fn bold(s: &str) -> String {
+        format!("{}{}{}", BOLD, s, BOLD_OFF)
+    }
+}
 pub fn git_churn(path: PathBuf, max_commits: Option<usize>) -> Result<Vec<FileChurn>, AnyError> {
-    let repo = Repository::open(path)?;
+    let repo = match Repository::open(&path) {
+        Ok(repo) => repo,
+        Err(e) => return Err(format!(
+            "Could not find Git repository at {:?}.\nInstead of churn-per-file (requires a Git repo), try running code-map again with '{}'.\nInner error: {}",
+            path, ansi::bold("--metric bytes-per-file"), e
+        )
+        .into()),
+    };
     let mut revwalk = repo.revwalk()?;
     revwalk.push_head()?;
 

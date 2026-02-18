@@ -52,12 +52,17 @@ pub struct Cli {
 }
 
 #[macroquad::main(window_conf)]
-async fn main() -> Result<(), AnyError> {
+async fn main() {
+    if let Err(e) = fallible_main().await {
+        eprintln!("Error: {}", e);
+    }
+}
+async fn fallible_main() -> Result<(), AnyError> {
     let args = Cli::parse();
-    let mut ui = compute_ui(args.clone());
+    let mut ui = compute_ui(args.clone())?;
     while should_continue(&ui) {
         if ui.should_refresh() {
-            ui = log_time!(compute_ui(args.clone()), "rearrange");
+            ui = log_time!(compute_ui(args.clone())?, "rearrange");
         }
         // log_time!(
         ui.draw()
@@ -68,7 +73,7 @@ async fn main() -> Result<(), AnyError> {
     Ok(())
 }
 
-fn compute_ui(args: Cli) -> Ui {
+fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
     let all_extensions = true;
     let Cli {
         input_folder,
@@ -87,7 +92,7 @@ fn compute_ui(args: Cli) -> Ui {
             all_extensions,
             max_commits,
             &exclude
-        ),
+        )?,
         format!("computing metrics {:?}", metric)
     );
 
@@ -97,7 +102,7 @@ fn compute_ui(args: Cli) -> Ui {
         "arrangement"
     );
     log_time!(log_counts(&ui.tree));
-    ui
+    Ok(ui)
 }
 fn should_continue(_ui: &Ui) -> bool {
     // if _ui.is_searcher_focused() {
@@ -129,18 +134,17 @@ fn compute_metrics(
     all_extensions: bool,
     max_commits: Option<usize>,
     exclude: &HashSet<String>,
-) -> (Tree, &'static str) {
+) -> Result<(Tree, &'static str), AnyError> {
     let (tree, units) = match metric {
         Metrics::BytesPerFile => (
             if all_extensions {
-                metrics::bytes_per_file::bytes_per_file(&input_folder, exclude).unwrap()
+                metrics::bytes_per_file::bytes_per_file(&input_folder, exclude)?
             } else {
                 metrics::bytes_per_file::bytes_per_file_with_extension(
                     &input_folder,
                     TEXT_FILE_EXTENSIONS,
                     exclude,
-                )
-                .unwrap()
+                )?
                 .unwrap()
             },
             "bytes",
@@ -150,17 +154,15 @@ fn compute_metrics(
             "mentions",
         ),
         Metrics::LinesPerFile => (
-            metrics::lines::lines_per_file(&input_folder)
-                .unwrap()
-                .unwrap(),
+            metrics::lines::lines_per_file(&input_folder)?.unwrap(),
             "lines",
         ),
         Metrics::ChurnPerFile => (
-            metrics::churn_per_file::git_churn_per_file(input_folder.clone(), max_commits).unwrap(),
+            metrics::churn_per_file::git_churn_per_file(input_folder.clone(), max_commits)?,
             "modifications (commits per file)",
         ),
     };
-    (tree, units)
+    Ok((tree, units))
 }
 
 fn arrange(padding: f32, arrangement: String, mut treemap: &mut Tree, available: Rect) {
