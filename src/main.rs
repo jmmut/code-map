@@ -60,7 +60,8 @@ async fn main() {
 async fn fallible_main() -> Result<(), AnyError> {
     let args = Cli::parse();
     let mut ui = compute_ui(args.clone())?;
-    while should_continue(&ui) {
+    loop {
+        ui.react();
         if ui.should_refresh() {
             ui = log_time!(compute_ui(args.clone())?, "rearrange");
         }
@@ -68,6 +69,9 @@ async fn fallible_main() -> Result<(), AnyError> {
         ui.draw()
         // )
         ;
+        if ui.should_quit() {
+            break;
+        }
         next_frame().await
     }
     Ok(())
@@ -103,19 +107,6 @@ fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
     );
     log_time!(log_counts(&ui.tree));
     Ok(ui)
-}
-fn should_continue(_ui: &Ui) -> bool {
-    // if _ui.is_searcher_focused() {
-    //     true
-    // } else {
-    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
-        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
-    // let escape_pressed = is_key_down(KeyCode::Escape);
-    let should_quit = ctrl_q_pressed
-            // || escape_pressed
-            ;
-    !should_quit
-    // }
 }
 
 fn window_conf() -> Conf {

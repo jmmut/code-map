@@ -5,6 +5,7 @@ use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cac
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
+use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
 use macroquad::math::f32;
 use macroquad::prelude::{
     BLACK, Color, FilterMode, LIGHTGRAY, MouseButton, Rect, RenderTarget, Vec2, clear_background,
@@ -38,6 +39,11 @@ pub struct Ui {
     refresh: bool,
     refresh_lines: bool,
     rendered_lines: RenderTarget,
+    should_quit: bool,
+}
+
+pub enum Event {
+    Quit,
 }
 
 impl Ui {
@@ -74,9 +80,29 @@ impl Ui {
             refresh: false,
             refresh_lines: true,
             rendered_lines: render_target,
+            should_quit: false,
         }
     }
-
+    pub fn react(&mut self) {
+        let events = self.get_events();
+        for event in events {
+            match event {
+                Event::Quit => {
+                    self.should_quit = true;
+                }
+            }
+        }
+    }
+    fn get_events(&mut self) -> Vec<Event> {
+        let mut events = vec![];
+        if should_quit() {
+            events.push(Event::Quit)
+        }
+        events
+    }
+    pub fn should_quit(&self) -> bool {
+        self.should_quit
+    }
     pub fn draw(&mut self) {
         if self.refresh_lines {
             log_time!(
@@ -197,9 +223,23 @@ impl Ui {
     }
 }
 
+fn should_quit() -> bool {
+    // if _ui.is_searcher_focused() {
+    //     true
+    // } else {
+    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
+        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
+    // let escape_pressed = is_key_down(KeyCode::Escape);
+    let should_quit = ctrl_q_pressed
+            // || escape_pressed
+            ;
+    should_quit
+    // }
+}
+
 fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
-    let small_pad = font_size * 2.5;
-    let big_pad = font_size * 12.0;
+    let small_pad = small_pad(font_size);
+    let big_pad = big_pad(font_size);
     let map_rect = round_rect(Rect::new(
         small_pad,
         small_pad,
@@ -207,6 +247,14 @@ fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
         height - small_pad - big_pad,
     ));
     map_rect
+}
+
+pub fn small_pad(font_size: f32) -> f32 {
+    font_size * 2.5
+}
+
+pub fn big_pad(font_size: f32) -> f32 {
+    font_size * 12.0
 }
 
 fn get_searcher_rect(map_rect: Rect, font_size: f32) -> Rect {
