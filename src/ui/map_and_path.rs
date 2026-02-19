@@ -1,6 +1,5 @@
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{draw_rect, is_rect_clicked, round_rect};
-use crate::ui::searcher::Searcher;
 use crate::ui::set_if_different_or_unset_if_same;
 use macroquad::color::Color;
 use macroquad::color_u8;
@@ -40,13 +39,12 @@ pub fn choose_and_draw_map_and_path(
     units: &str,
     map_rect: Rect,
     font_size: f32,
+    selected: &Option<Vec<TreeView>>,
+    rendered_lines: &RenderTarget,
     refresh_lines: &mut bool,
-    searcher: &mut Searcher,
-    selected: &mut Option<Vec<TreeView>>,
     level: &mut Option<usize>,
-    rendered_lines: &mut RenderTarget,
 ) {
-    searcher.update_selected(selected);
+    // searcher.update_selected(selected);
     if let Some(selected_nodes) = &selected {
         draw_colored_map_and_path(
             units,

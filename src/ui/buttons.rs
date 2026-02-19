@@ -5,18 +5,8 @@ use juquad::input::input_trait::InputTrait;
 use juquad::widgets::Interaction;
 use juquad::widgets::anchor::{Anchor, Horizontal, Layout, Vertical};
 use macroquad::color::{BLACK, DARKGRAY, GRAY, WHITE};
-use macroquad::input::mouse_position;
 use macroquad::math::{Rect, Vec2, vec2};
-use macroquad::prelude::{
-    MouseButton, draw_text, is_mouse_button_down, is_mouse_button_released, measure_text,
-    screen_height, screen_width,
-};
-
-pub struct PressedButtons {
-    pub refresh: bool,
-    pub copied: bool,
-    pub squareness: bool,
-}
+use macroquad::prelude::{draw_text, measure_text};
 
 pub struct Buttons {
     pub copy_to_clipboard: Button,
@@ -76,6 +66,7 @@ pub struct Button {
     interaction: Interaction,
 }
 
+#[allow(unused)]
 pub fn immediate_button(text: &str, anchor: Anchor, font_size: f32) -> (Rect, bool) {
     let mut button_ = button(text, anchor, font_size);
     interact(&mut button_);
@@ -123,51 +114,4 @@ pub fn draw_button(button: &Button) {
         button.font_size,
         WHITE,
     );
-}
-
-pub fn draw_buttons(map_rect: Rect, font_size: f32) -> PressedButtons {
-    let layout = Layout::Horizontal {
-        direction: Horizontal::Left,
-        alignment: Vertical::Top,
-    };
-    let anchor = Anchor::inside(
-        Rect::new(0.0, 0.0, screen_width(), screen_height()),
-        layout,
-        Vec2::splat(small_pad(font_size)),
-    );
-
-    let (_button_rect, copied) = immediate_button("Copy to clipboard", anchor, font_size);
-
-    let anchor = Anchor::next_to(_button_rect, layout, font_size);
-    let (_button_rect, refresh) = immediate_button("Refresh", anchor, font_size);
-
-    // let next_x = button_rect.x + button_rect.w + font_size;
-    // let (_button_rect, squareness) = draw_button("Compute squareness", next_x, y, font_size);
-    PressedButtons {
-        refresh,
-        copied,
-        squareness: false,
-    }
-}
-
-pub fn draw_buttons2(font_size: f32) -> PressedButtons {
-    let layout = Layout::Horizontal {
-        direction: Horizontal::Left,
-        alignment: Vertical::Top,
-    };
-    let screen_rect = Rect::new(0.0, 0.0, screen_width(), screen_height());
-    let anchor = Anchor::inside(screen_rect, layout, Vec2::splat(small_pad(font_size)));
-
-    let (_button_rect, copied) = immediate_button("Copy to clipboard", anchor, font_size);
-
-    let anchor = Anchor::next_to(_button_rect, layout, font_size);
-    let (_button_rect, refresh) = immediate_button("Refresh", anchor, font_size);
-
-    // let next_x = button_rect.x + button_rect.w + font_size;
-    // let (_button_rect, squareness) = draw_button("Compute squareness", next_x, y, font_size);
-    PressedButtons {
-        refresh,
-        copied,
-        squareness: false,
-    }
 }

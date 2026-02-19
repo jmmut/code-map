@@ -1,6 +1,6 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::{Buttons, draw_buttons, interact};
+use crate::ui::buttons::{Buttons, interact};
 use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cached};
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
@@ -103,13 +103,7 @@ impl Ui {
                     self.refresh = true;
                 }
                 Event::CopyToClipboard => {
-                    if let Some(parts) = &self.selected {
-                        let path = parts.last().map_or("", |view| &view.name);
-                        let ctx = ClipboardContext::new().unwrap();
-                        // let old = ctx.get_text().unwrap();
-                        // println!("copying {path} to clipboard, was {old}");
-                        ctx.set_text(path.to_string()).unwrap();
-                    }
+                    copy_selected_to_clipboard(&self.selected);
                 }
                 Event::Squareness => {
                     println!("squareness: {}", self.tree.compute_squareness())
@@ -119,7 +113,11 @@ impl Ui {
                 }
             }
         }
+
+        self.searcher.update_selected(&mut self.selected);
+        select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
     }
+
     fn get_events(&mut self) -> Vec<Event> {
         let mut events = vec![];
         if should_quit() {
@@ -149,20 +147,19 @@ impl Ui {
 
         // log_time!(
         choose_and_draw_map_and_path(
-                &self.tree,
-                &self.units,
-                self.map_rect,
-                self.font_size,
-                &mut self.refresh_lines,
-                &mut self.searcher,
-                &mut self.selected,
-                &mut self.level,
-                &mut self.rendered_lines,
-            )
+            &self.tree,
+            &self.units,
+            self.map_rect,
+            self.font_size,
+            &self.selected,
+            &self.rendered_lines,
+            &mut self.refresh_lines,
+            &mut self.level,
+        )
         // , "choose_and_draw_map_and_path" )
         ;
 
-        select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
+        // select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
 
         self.searcher
             .draw_search(&self.tree, &self.keys.keycode_event_queue);
@@ -193,7 +190,7 @@ impl Ui {
         }
     }
 
-    fn draw_regenerate_warning(&mut self) {
+    fn draw_regenerate_warning(&self) {
         let font_size = self.font_size * 4.0;
         let text = "Re-drawing grid...";
         let measures = measure_text(text, None, font_size as u16, 1.0);
@@ -211,14 +208,6 @@ impl Ui {
             font_size,
             BLACK,
         );
-    }
-
-    fn maybe_rearrange(&mut self) {
-        let new_width = screen_width();
-        let new_height = screen_height();
-        if new_width != self.width || new_height != self.height {
-            self.rearrange(vec2(new_width, new_height));
-        }
     }
 
     fn rearrange(&mut self, new_screen_size: Vec2) {
@@ -251,6 +240,16 @@ impl Ui {
     }
     pub fn is_searcher_focused(&self) -> bool {
         self.searcher.is_focused()
+    }
+}
+
+fn copy_selected_to_clipboard(selected: &Option<Vec<TreeView>>) {
+    if let Some(parts) = selected {
+        let path = parts.last().map_or("", |view| &view.name);
+        let ctx = ClipboardContext::new().unwrap();
+        // let old = ctx.get_text().unwrap();
+        // println!("copying {path} to clipboard, was {old}");
+        ctx.set_text(path.to_string()).unwrap();
     }
 }
 

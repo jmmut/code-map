@@ -65,13 +65,13 @@ async fn fallible_main() -> Result<(), AnyError> {
         if ui.should_quit() {
             break;
         }
-        if ui.should_refresh() {
-            ui = log_time!(compute_ui(args.clone())?, "rearrange");
-        }
         // log_time!(
         ui.draw()
         // )
         ;
+        if ui.should_refresh() {
+            ui = log_time!(compute_ui(args.clone())?, "rearrange");
+        }
         next_frame().await
     }
     Ok(())
