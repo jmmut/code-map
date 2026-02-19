@@ -48,7 +48,7 @@ pub enum Event {
     RefreshMetrics,
     CopyToClipboard,
     Squareness,
-    Rearrange{screen_size: Vec2},
+    Rearrange { screen_size: Vec2 },
 }
 
 impl Ui {
@@ -92,6 +92,8 @@ impl Ui {
     }
     pub fn react(&mut self) {
         let events = self.get_events();
+        self.maybe_refresh_lines_cache();
+        self.keys.capture_keys_this_frame();
         for event in events {
             match event {
                 Event::Quit => {
@@ -112,7 +114,7 @@ impl Ui {
                 Event::Squareness => {
                     println!("squareness: {}", self.tree.compute_squareness())
                 }
-                Event::Rearrange{screen_size} => {
+                Event::Rearrange { screen_size } => {
                     self.rearrange(screen_size);
                 }
             }
@@ -131,7 +133,7 @@ impl Ui {
         }
         let screen_size = vec2(screen_width(), screen_height());
         if screen_size != vec2(self.width, self.height) {
-            events.push(Event::Rearrange{screen_size});
+            events.push(Event::Rearrange { screen_size });
         }
         events
     }
@@ -139,23 +141,9 @@ impl Ui {
         self.should_quit
     }
     pub fn draw(&mut self) {
-        if self.refresh_lines {
-            log_time!(
-                draw_nodes_lines_cached(
-                    &self.tree,
-                    self.map_rect,
-                    self.level,
-                    self.font_size,
-                    self.width,
-                    self.height,
-                    &mut self.rendered_lines
-                ),
-                "draw_nodes_lines"
-            );
-            self.refresh_lines = false;
-        }
+        // self.maybe_refresh_lines_cache();
         // self.maybe_rearrange();
-        self.keys.capture_keys_this_frame();
+        // self.keys.capture_keys_this_frame();
 
         clear_background(LIGHTGRAY);
 
@@ -184,6 +172,24 @@ impl Ui {
 
         if self.refresh_lines || self.refresh {
             self.draw_regenerate_warning();
+        }
+    }
+
+    fn maybe_refresh_lines_cache(&mut self) {
+        if self.refresh_lines {
+            log_time!(
+                draw_nodes_lines_cached(
+                    &self.tree,
+                    self.map_rect,
+                    self.level,
+                    self.font_size,
+                    self.width,
+                    self.height,
+                    &mut self.rendered_lines
+                ),
+                "draw_nodes_lines"
+            );
+            self.refresh_lines = false;
         }
     }
 
