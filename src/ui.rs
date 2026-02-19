@@ -31,6 +31,7 @@ pub struct Ui {
     searcher: Searcher,
     font_size: f32,
     selected: Option<Vec<TreeView>>,
+    hovered: Option<Vec<TreeView>>,
     level: Option<usize>,
     keys: key_queue::OrderedEventHandler,
     arrange: fn(f32, String, &mut Tree, Rect),
@@ -78,6 +79,7 @@ impl Ui {
             font_size,
             searcher,
             selected: None,
+            hovered: None,
             level: None,
             keys: key_queue::OrderedEventHandler::new(),
             arrange,
@@ -120,6 +122,14 @@ impl Ui {
                 compute_path_widths(self.map_rect, self.font_size, nested_nodes);
             update_selected_level(&text_rects, &mut self.level, &mut self.refresh_lines);
         }
+
+        let mouse_position = Vec2::from(mouse_position());
+        if self.map_rect.contains(mouse_position) {
+            let hovered = self.tree.get_nested_by_position(mouse_position);
+            self.hovered = Some(TreeView::from_nodes(&hovered));
+        } else {
+            self.hovered = None;
+        }
     }
 
     pub fn should_quit(&self) -> bool {
@@ -128,13 +138,17 @@ impl Ui {
     pub fn draw(&self) {
         clear_background(LIGHTGRAY);
 
+        let selected = if self.selected.is_some() {
+            &self.selected
+        } else {
+            &self.hovered
+        };
         // log_time!(
         draw_map_and_path(
-            &self.tree,
             &self.units,
             self.map_rect,
             self.font_size,
-            &self.selected,
+            selected,
             &self.rendered_lines,
             self.level,
         )

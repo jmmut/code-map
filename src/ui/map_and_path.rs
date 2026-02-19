@@ -6,8 +6,8 @@ use macroquad::color_u8;
 use macroquad::math::f32;
 use macroquad::prelude::{
     BLACK, Camera2D, GRAY, MouseButton, Rect, RenderTarget, Vec2, WHITE, clear_background,
-    draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text, mouse_position,
-    set_camera, set_default_camera, vec2,
+    draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text, set_camera,
+    set_default_camera, vec2,
 };
 use std::collections::VecDeque;
 
@@ -35,7 +35,6 @@ const fn from_hex(hex: u32) -> Color {
 }
 
 pub fn draw_map_and_path(
-    tree: &Tree,
     units: &str,
     map_rect: Rect,
     font_size: f32,
@@ -44,25 +43,12 @@ pub fn draw_map_and_path(
     level: Option<usize>,
 ) {
     if let Some(selected_nodes) = &selected {
-        draw_colored_map_and_path(units, map_rect, font_size, &selected_nodes, level);
-    } else {
-        draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level);
+        if selected_nodes.len() > 0 {
+            draw_path(units, map_rect, font_size, &selected_nodes, level);
+            draw_colored_selected_in_map(&selected_nodes, level);
+        }
     }
-
     draw_texture(rendered_lines.texture, 0., 0., WHITE);
-}
-
-fn draw_colored_map_and_path(
-    units: &str,
-    map_rect: Rect,
-    font_size: f32,
-    nested_nodes: &Vec<TreeView>,
-    level_opt: Option<usize>,
-) {
-    if nested_nodes.len() > 0 {
-        draw_path(units, map_rect, font_size, nested_nodes, level_opt);
-        draw_colored_selected_in_map(nested_nodes, level_opt);
-    }
 }
 
 fn draw_path(
@@ -266,26 +252,6 @@ fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: Option<
         } else {
             // a null rect can happen for empty folders or if a file has size 0
         }
-    }
-}
-
-fn draw_hovered_nested_nodes(
-    units: &str,
-    treemap: &Tree,
-    map_rect: Rect,
-    font_size: f32,
-    level: Option<usize>,
-) {
-    let mouse_position = Vec2::from(mouse_position());
-    if map_rect.contains(mouse_position) {
-        let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_colored_map_and_path(
-            units,
-            map_rect,
-            font_size,
-            &TreeView::from_nodes(&nodes_pointed),
-            level,
-        );
     }
 }
 
