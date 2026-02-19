@@ -2,8 +2,7 @@ use crate::log_time;
 use crate::tree::{Tree, TreeView};
 use crate::ui::buttons::{Buttons, interact};
 use crate::ui::map_and_path::{
-    choose_and_draw_map_and_path, compute_path_widths, draw_nodes_lines_cached,
-    update_selected_level,
+    compute_path_widths, draw_map_and_path, draw_nodes_lines_cached, update_selected_level,
 };
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
@@ -94,27 +93,21 @@ impl Ui {
         }
     }
     pub fn react(&mut self) {
-        let events = self.get_events();
         self.maybe_refresh_lines_cache();
         self.keys.capture_keys_this_frame();
-        for event in events {
-            match event {
-                Event::Quit => {
-                    self.should_quit = true;
-                }
-                Event::RefreshMetrics => {
-                    self.refresh = true;
-                }
-                Event::CopyToClipboard => {
-                    copy_selected_to_clipboard(&self.selected);
-                }
-                Event::Squareness => {
-                    println!("squareness: {}", self.tree.compute_squareness())
-                }
-                Event::Rearrange { screen_size } => {
-                    self.rearrange(screen_size);
-                }
-            }
+
+        if should_quit() {
+            self.should_quit = true;
+        }
+        if interact(&mut self.buttons.copy_to_clipboard).is_clicked() {
+            copy_selected_to_clipboard(&self.selected);
+        }
+        if interact(&mut self.buttons.refresh).is_clicked() {
+            self.refresh = true;
+        }
+        let screen_size = vec2(screen_width(), screen_height());
+        if screen_size != vec2(self.width, self.height) {
+            self.rearrange(screen_size);
         }
 
         self.searcher.update_selected(&mut self.selected);
@@ -129,35 +122,14 @@ impl Ui {
         }
     }
 
-    fn get_events(&mut self) -> Vec<Event> {
-        let mut events = vec![];
-        if should_quit() {
-            events.push(Event::Quit)
-        }
-        if interact(&mut self.buttons.copy_to_clipboard).is_clicked() {
-            events.push(Event::CopyToClipboard);
-        }
-        if interact(&mut self.buttons.refresh).is_clicked() {
-            events.push(Event::RefreshMetrics);
-        }
-        let screen_size = vec2(screen_width(), screen_height());
-        if screen_size != vec2(self.width, self.height) {
-            events.push(Event::Rearrange { screen_size });
-        }
-        events
-    }
     pub fn should_quit(&self) -> bool {
         self.should_quit
     }
     pub fn draw(&self) {
-        // self.maybe_refresh_lines_cache();
-        // self.maybe_rearrange();
-        // self.keys.capture_keys_this_frame();
-
         clear_background(LIGHTGRAY);
 
         // log_time!(
-        choose_and_draw_map_and_path(
+        draw_map_and_path(
             &self.tree,
             &self.units,
             self.map_rect,
@@ -169,13 +141,8 @@ impl Ui {
         // , "choose_and_draw_map_and_path" )
         ;
 
-        // select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
-
         self.searcher.draw_search();
-
-        // self.act_on_buttons();
         self.buttons.draw();
-
         if self.refresh_lines || self.refresh {
             self.draw_regenerate_warning();
         }

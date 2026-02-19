@@ -34,7 +34,7 @@ const fn from_hex(hex: u32) -> Color {
     color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
 }
 
-pub fn choose_and_draw_map_and_path(
+pub fn draw_map_and_path(
     tree: &Tree,
     units: &str,
     map_rect: Rect,
@@ -43,10 +43,8 @@ pub fn choose_and_draw_map_and_path(
     rendered_lines: &RenderTarget,
     level: Option<usize>,
 ) {
-    // searcher.update_selected(selected);
     if let Some(selected_nodes) = &selected {
         draw_colored_map_and_path(units, map_rect, font_size, &selected_nodes, level);
-        // refresh_lines = true;
     } else {
         draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level);
     }
@@ -76,11 +74,7 @@ fn draw_path(
 ) {
     let (node_name_widths, top_left, text_rects) =
         compute_path_widths(map_rect, font_size, nested_nodes);
-
-    // update_selected_level(&text_rects, level_opt, refresh_lines);
-
     draw_path_color(text_rects, level_opt);
-
     draw_path_text(
         units,
         top_left,
@@ -145,14 +139,7 @@ pub fn update_selected_level(
     }
 }
 fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>) {
-    // let mut previous_width = 0.0;
     for (i, rect) in text_rects.into_iter().enumerate() {
-        // let rect = Rect::new(
-        //     top_left.x + previous_width,
-        //     top_left.y,
-        //     width - previous_width,
-        //     1.5 * font_size,
-        // );
         if level_opt.is_some_and(|level| level < i) {
             draw_rectangle_lines(
                 rect.x,
@@ -165,11 +152,6 @@ fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>) {
         } else {
             draw_rect(rect, COLORS[i % COLORS.len()]);
         }
-        // if is_rect_clicked(&rect, MouseButton::Left) {
-        //     set_if_different_or_unset_if_same(level_opt, i);
-        //     *refresh_lines = true;
-        // }
-        // previous_width = *width;
     }
 }
 
@@ -182,12 +164,6 @@ fn draw_path_text(
     mut node_name_widths: VecDeque<f32>,
 ) {
     node_name_widths.push_front(0.0);
-    // let previous_width = *node_name_widths.back().unwrap();
-    // let path_rect = Rect::new(top_left.x, top_left.y, previous_width, 1.5 * font_size);
-    // if is_rect_clicked(&path_rect, MouseButton::Right) {
-    //     *level_opt = None;
-    //     *refresh_lines = true;
-    // }
     let deepest_child = nested_nodes.last().unwrap();
     let size = if let Some(level) = level_opt {
         nested_nodes
