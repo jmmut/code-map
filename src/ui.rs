@@ -48,6 +48,7 @@ pub enum Event {
     RefreshMetrics,
     CopyToClipboard,
     Squareness,
+    Rearrange{screen_size: Vec2},
 }
 
 impl Ui {
@@ -111,6 +112,9 @@ impl Ui {
                 Event::Squareness => {
                     println!("squareness: {}", self.tree.compute_squareness())
                 }
+                Event::Rearrange{screen_size} => {
+                    self.rearrange(screen_size);
+                }
             }
         }
     }
@@ -124,6 +128,10 @@ impl Ui {
         }
         if interact(&mut self.buttons.refresh).is_clicked() {
             events.push(Event::RefreshMetrics);
+        }
+        let screen_size = vec2(screen_width(), screen_height());
+        if screen_size != vec2(self.width, self.height) {
+            events.push(Event::Rearrange{screen_size});
         }
         events
     }
@@ -146,7 +154,7 @@ impl Ui {
             );
             self.refresh_lines = false;
         }
-        self.maybe_rearrange();
+        // self.maybe_rearrange();
         self.keys.capture_keys_this_frame();
 
         clear_background(LIGHTGRAY);
@@ -203,30 +211,35 @@ impl Ui {
         let new_width = screen_width();
         let new_height = screen_height();
         if new_width != self.width || new_height != self.height {
-            self.selected = None;
-            self.width = new_width;
-            self.height = new_height;
-            self.map_rect = get_map_rect(self.width, self.height, self.font_size);
-            (self.arrange)(
-                self.padding,
-                self.arrangement.clone(),
-                &mut self.tree,
-                self.map_rect,
-            );
-            self.searcher
-                .position(get_searcher_rect(self.map_rect, self.font_size));
-
-            let render_target =
-                // log_time!(
-                macroquad::prelude::render_target(self.width as u32, self.height as u32)
-                // , "reallocate lines texture")
-            ;
-            render_target.texture.set_filter(FilterMode::Nearest);
-            self.rendered_lines = render_target;
-            self.refresh = true;
-            self.refresh_lines = true;
+            self.rearrange(vec2(new_width, new_height));
         }
     }
+
+    fn rearrange(&mut self, new_screen_size: Vec2) {
+        self.selected = None;
+        self.width = new_screen_size.x;
+        self.height = new_screen_size.y;
+        self.map_rect = get_map_rect(self.width, self.height, self.font_size);
+        (self.arrange)(
+            self.padding,
+            self.arrangement.clone(),
+            &mut self.tree,
+            self.map_rect,
+        );
+        self.searcher
+            .position(get_searcher_rect(self.map_rect, self.font_size));
+
+        let render_target =
+            // log_time!(
+            macroquad::prelude::render_target(self.width as u32, self.height as u32)
+            // , "reallocate lines texture")
+            ;
+        render_target.texture.set_filter(FilterMode::Nearest);
+        self.rendered_lines = render_target;
+        self.refresh = true;
+        self.refresh_lines = true;
+    }
+
     pub fn should_refresh(&self) -> bool {
         self.refresh
     }
