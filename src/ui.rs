@@ -186,23 +186,7 @@ impl Ui {
     }
 
     fn draw_regenerate_warning(&self) {
-        let font_size = self.font_size * 4.0;
-        let text = "Re-drawing grid...";
-        let measures = measure_text(text, None, font_size as u16, 1.0);
-        let horizontal_pad = font_size * 1.0;
-        let Vec2 { x, y } =
-            self.map_rect.center() - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
-
-        let measure = measure_text(text, None, font_size as u16, 1.0);
-        let button_rect = Rect::new(x, y, measure.width + horizontal_pad * 2.0, font_size * 1.5);
-        draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
-        draw_text(
-            text,
-            button_rect.x + horizontal_pad,
-            button_rect.y + font_size,
-            font_size,
-            BLACK,
-        );
+        draw_pop_up("Re-drawing grid...", self.map_rect.center(), self.font_size);
     }
 
     fn rearrange(&mut self, new_screen_size: Vec2) {
@@ -224,6 +208,24 @@ impl Ui {
     pub fn is_searcher_focused(&self) -> bool {
         self.searcher.is_focused()
     }
+}
+
+pub fn draw_pop_up(text: &str, center: Vec2, font_size: f32) {
+    let font_size = font_size * 4.0;
+    let measures = measure_text(text, None, font_size as u16, 1.0);
+    let horizontal_pad = font_size * 1.0;
+    let Vec2 { x, y } = center - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
+
+    let measure = measure_text(text, None, font_size as u16, 1.0);
+    let button_rect = Rect::new(x, y, measure.width + horizontal_pad * 2.0, font_size * 1.5);
+    draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
+    draw_text(
+        text,
+        button_rect.x + horizontal_pad,
+        button_rect.y + font_size,
+        font_size,
+        BLACK,
+    );
 }
 
 fn copy_selected_to_clipboard(selected: &Option<Vec<TreeView>>) {
@@ -279,7 +281,10 @@ fn get_searcher_rect(map_rect: Rect, font_size: f32) -> Rect {
     )
 }
 
-fn choose_font_size(width: f32, height: f32) -> f32 {
+pub fn choose_font_size_v(screen_size: Vec2) -> f32 {
+    choose_font_size(screen_size.x, screen_size.y)
+}
+pub fn choose_font_size(width: f32, height: f32) -> f32 {
     let min_side = width.min(height * 16.0 / 9.0);
     FONT_SIZE
         * if min_side < 1600.0 {

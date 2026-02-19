@@ -9,7 +9,7 @@ use code_map::arrangements::{binary, golden, linear};
 use code_map::metrics::Metrics;
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::tree::Tree;
-use code_map::ui::Ui;
+use code_map::ui::{Ui, choose_font_size_v, draw_pop_up};
 use code_map::{AnyError, log_time, metrics};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
@@ -58,6 +58,13 @@ async fn main() {
     }
 }
 async fn fallible_main() -> Result<(), AnyError> {
+    let screen_size = vec2(screen_width(), screen_height());
+    draw_pop_up(
+        "Loading...",
+        screen_size * 0.5,
+        choose_font_size_v(screen_size),
+    );
+    next_frame().await;
     let args = Cli::parse();
     let mut ui = compute_ui(args.clone())?;
     loop {
