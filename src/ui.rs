@@ -1,7 +1,10 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
 use crate::ui::buttons::{Buttons, interact};
-use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cached};
+use crate::ui::map_and_path::{
+    choose_and_draw_map_and_path, compute_path_widths, draw_nodes_lines_cached,
+    update_selected_level,
+};
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
@@ -116,7 +119,14 @@ impl Ui {
 
         self.searcher.update_selected(&mut self.selected);
         select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
-        self.searcher.react(&self.keys.keycode_event_queue, &self.tree);
+        self.searcher
+            .react(&self.keys.keycode_event_queue, &self.tree);
+
+        if let Some(nested_nodes) = &self.selected {
+            let (_, _, text_rects) =
+                compute_path_widths(self.map_rect, self.font_size, nested_nodes);
+            update_selected_level(&text_rects, &mut self.level, &mut self.refresh_lines);
+        }
     }
 
     fn get_events(&mut self) -> Vec<Event> {
@@ -139,7 +149,7 @@ impl Ui {
     pub fn should_quit(&self) -> bool {
         self.should_quit
     }
-    pub fn draw(&mut self) {
+    pub fn draw(&self) {
         // self.maybe_refresh_lines_cache();
         // self.maybe_rearrange();
         // self.keys.capture_keys_this_frame();
@@ -154,8 +164,7 @@ impl Ui {
             self.font_size,
             &self.selected,
             &self.rendered_lines,
-            &mut self.refresh_lines,
-            &mut self.level,
+            self.level,
         )
         // , "choose_and_draw_map_and_path" )
         ;
