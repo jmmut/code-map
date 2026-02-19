@@ -116,6 +116,7 @@ impl Ui {
 
         self.searcher.update_selected(&mut self.selected);
         select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
+        self.searcher.react(&self.keys.keycode_event_queue, &self.tree);
     }
 
     fn get_events(&mut self) -> Vec<Event> {
@@ -161,8 +162,7 @@ impl Ui {
 
         // select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
 
-        self.searcher
-            .draw_search(&self.tree, &self.keys.keycode_event_queue);
+        self.searcher.draw_search();
 
         // self.act_on_buttons();
         self.buttons.draw();

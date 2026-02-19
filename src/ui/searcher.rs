@@ -71,8 +71,7 @@ impl Searcher {
         }
     }
 
-    pub fn draw_search(&mut self, treemap: &Tree, keys: &VecDeque<InputCharacter>) {
-        self.react(keys, treemap);
+    pub fn draw_search(&self) {
         self.draw_search_box();
         if self.focused {
             let results = &self.results;
@@ -86,7 +85,7 @@ impl Searcher {
         }
     }
 
-    fn react(&mut self, keys: &VecDeque<InputCharacter>, treemap: &Tree) {
+    pub fn react(&mut self, keys: &VecDeque<InputCharacter>, treemap: &Tree) {
         let mut input_text = InputText::new(self.rect, self.search_word.clone(), self.font_size);
         input_text.interact(self.focused, keys);
         let mut should_search = self.search_word != input_text.text;
