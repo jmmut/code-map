@@ -7,35 +7,28 @@ use std::collections::VecDeque;
 use crate::ui::key_queue::InputCharacter;
 use crate::ui::rect_utils::draw_rect;
 
-pub struct InputText<'a> {
+pub struct InputText {
     pub rect: Rect,
-    pub text: &'a mut String,
-    pub keys: &'a VecDeque<InputCharacter>,
+    pub text: String,
     pub focused: bool,
     pub font_size: f32,
 }
-impl<'a> InputText<'a> {
-    pub fn new(
-        rect: Rect,
-        text: &'a mut String,
-        keys: &'a VecDeque<InputCharacter>,
-        font_size: f32,
-    ) -> Self {
+impl InputText {
+    pub fn new(rect: Rect, text: String, font_size: f32) -> Self {
         Self {
             rect,
             text,
-            keys,
             font_size,
             focused: false,
         }
     }
 }
 
-impl<'a> InputText<'a> {
-    pub fn interact(&mut self, focused: bool) {
+impl InputText {
+    pub fn interact(&mut self, focused: bool, keys: &VecDeque<InputCharacter>) {
         self.focused = focused;
         if self.focused {
-            for InputCharacter { key, modifier } in self.keys {
+            for InputCharacter { key, modifier } in keys {
                 if !modifier.alt && !modifier.ctrl && !modifier.shift && !modifier.logo {
                     self.interact_no_modifiers(*key);
                 }
@@ -73,7 +66,7 @@ impl<'a> InputText<'a> {
     }
 }
 
-impl<'a> InputText<'a> {
+impl InputText {
     fn interact_no_modifiers(&mut self, key: KeyCode) {
         match key {
             KeyCode::Space => self.text.push(' '),
@@ -130,8 +123,8 @@ impl<'a> InputText<'a> {
             KeyCode::Backslash => self.text.push('\\'),
             KeyCode::RightBracket => self.text.push(']'),
             KeyCode::GraveAccent => self.text.push('`'),
-            KeyCode::World1 => *self.text += "World1",
-            KeyCode::World2 => *self.text += "World2",
+            KeyCode::World1 => self.text += "World1",
+            KeyCode::World2 => self.text += "World2",
             KeyCode::Escape => {}
             KeyCode::Enter => {}
             KeyCode::Tab => {}
