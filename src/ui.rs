@@ -56,22 +56,27 @@ pub enum Event {
 
 impl Ui {
     pub fn new(
-        tree: Tree,
+        mut tree: Tree,
         units: &str,
         arrange: fn(f32, String, &mut Tree, Rect),
         arrangement: String,
         padding: f32,
+        screen_size: Vec2,
     ) -> Self {
-        let width = screen_width();
-        let height = screen_height();
+        let width = screen_size.x;
+        let height = screen_size.y;
         let font_size = choose_font_size(width, height);
         let map_rect = get_map_rect(width, height, font_size);
-
-        let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
 
         let render_target = macroquad::prelude::render_target(width as u32, height as u32);
         render_target.texture.set_filter(FilterMode::Nearest);
         let buttons = Buttons::new(vec2(width, height), font_size);
+        let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
+
+        log_time!(
+            arrange(padding, arrangement.clone(), &mut tree, map_rect),
+            "arrangement"
+        );
         Self {
             tree,
             units: units.to_string(),
@@ -201,28 +206,16 @@ impl Ui {
     }
 
     fn rearrange(&mut self, new_screen_size: Vec2) {
-        self.selected = None;
-        self.width = new_screen_size.x;
-        self.height = new_screen_size.y;
-        self.map_rect = get_map_rect(self.width, self.height, self.font_size);
-        (self.arrange)(
-            self.padding,
+        let mut empty_tree = Tree::new_from_size("empty".to_string(), 0);
+        std::mem::swap(&mut empty_tree, &mut self.tree);
+        *self = Ui::new(
+            empty_tree,
+            &self.units,
+            self.arrange,
             self.arrangement.clone(),
-            &mut self.tree,
-            self.map_rect,
+            self.padding,
+            new_screen_size,
         );
-        self.searcher
-            .position(get_searcher_rect(self.map_rect, self.font_size));
-
-        let render_target =
-            // log_time!(
-            macroquad::prelude::render_target(self.width as u32, self.height as u32)
-            // , "reallocate lines texture")
-            ;
-        render_target.texture.set_filter(FilterMode::Nearest);
-        self.rendered_lines = render_target;
-        self.refresh = true;
-        self.refresh_lines = true;
     }
 
     pub fn should_refresh(&self) -> bool {

@@ -100,10 +100,14 @@ fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
         format!("computing metrics {:?}", metric)
     );
 
-    let mut ui = Ui::new(tree, units, arrange, arrangement.clone(), padding);
-    log_time!(
-        arrange(padding, arrangement.clone(), &mut ui.tree, ui.map_rect),
-        "arrangement"
+    let screen_size = vec2(screen_width(), screen_height());
+    let ui = Ui::new(
+        tree,
+        units,
+        arrange,
+        arrangement.clone(),
+        padding,
+        screen_size,
     );
     log_time!(log_counts(&ui.tree));
     Ok(ui)
