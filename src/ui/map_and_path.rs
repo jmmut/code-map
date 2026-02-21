@@ -1,6 +1,6 @@
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{draw_rect, is_rect_clicked, round_rect};
-use crate::ui::set_if_different_or_unset_if_same;
+use crate::ui::{path_rect, set_if_different_or_unset_if_same};
 use macroquad::color::Color;
 use macroquad::color_u8;
 use macroquad::math::f32;
@@ -36,7 +36,8 @@ const fn from_hex(hex: u32) -> Color {
 
 pub fn draw_map_and_path(
     units: &str,
-    map_rect: Rect,
+    width: f32,
+    height: f32,
     font_size: f32,
     selected: &Option<Vec<TreeView>>,
     rendered_lines: &RenderTarget,
@@ -44,7 +45,7 @@ pub fn draw_map_and_path(
 ) {
     if let Some(selected_nodes) = &selected {
         if selected_nodes.len() > 0 {
-            draw_path(units, map_rect, font_size, &selected_nodes, level);
+            draw_path(units, width, height, font_size, &selected_nodes, level);
             draw_colored_selected_in_map(&selected_nodes, level);
         }
     }
@@ -53,13 +54,14 @@ pub fn draw_map_and_path(
 
 fn draw_path(
     units: &str,
-    map_rect: Rect,
+    width: f32,
+    height: f32,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: Option<usize>,
 ) {
     let (node_name_widths, top_left, text_rects) =
-        compute_path_widths(map_rect, font_size, nested_nodes);
+        compute_path_widths(width, height, font_size, nested_nodes);
     draw_path_color(text_rects, level_opt);
     draw_path_text(
         units,
@@ -72,15 +74,15 @@ fn draw_path(
 }
 
 pub fn compute_path_widths(
-    map_rect: Rect,
+    width: f32,
+    height: f32,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
 ) -> (VecDeque<f32>, Vec2, Vec<Rect>) {
-    let path_y = map_rect.y + map_rect.h + font_size * 4.5;
+    let path_rect = path_rect(width, height, font_size);
     let node_name_widths = compute_name_widths(nested_nodes, font_size);
-    let top_left = Vec2::new(map_rect.x, path_y);
-    let text_rects = path_rects(top_left, font_size, &node_name_widths);
-    (node_name_widths, top_left, text_rects)
+    let text_rects = path_rects(path_rect.point(), font_size, &node_name_widths);
+    (node_name_widths, path_rect.point(), text_rects)
 }
 
 fn compute_name_widths(nested_nodes: &Vec<TreeView>, font_size: f32) -> VecDeque<f32> {

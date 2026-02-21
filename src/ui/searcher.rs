@@ -44,10 +44,9 @@ impl Searcher {
     }
     pub fn position(&mut self, mut rect: Rect) {
         let text_dimensions = measure_text(&self.tag, None, self.font_size as u16, 1.0);
-        self.tag_pos = Vec2::new(rect.x, rect.y);
+        self.tag_pos = Vec2::new(rect.x, rect.y + self.font_size);
         rect.x += text_dimensions.width;
         rect.w -= text_dimensions.width;
-        rect.y -= self.font_size;
         self.rect = rect;
     }
     pub fn get_new_result(&mut self) -> Option<&Vec<TreeView>> {
@@ -145,11 +144,11 @@ impl Searcher {
         let w = dimensions.width + 2.0 * horizontal_pad;
         let h = (results.len() as f32 + 0.5) * line_height;
         let space = 0.0 * line_height;
-        draw_rectangle(self.rect.x, self.rect.y - h - space, w, h, LIGHTGRAY);
-        draw_rectangle_lines(self.rect.x, self.rect.y - h - space, w, h, 2.0, BLACK);
+        draw_rectangle(self.rect.x, self.rect.bottom() - space, w, h, LIGHTGRAY);
+        draw_rectangle_lines(self.rect.x, self.rect.bottom() - space, w, h, 2.0, BLACK);
         draw_rectangle_lines(
             self.rect.x + horizontal_pad * 0.5,
-            self.rect.y + horizontal_pad * 0.5 - h - space,
+            self.rect.bottom() + horizontal_pad * 0.5 - space,
             w - horizontal_pad,
             line_height,
             2.0,
@@ -159,7 +158,7 @@ impl Searcher {
             draw_text(
                 result,
                 (self.rect.x + horizontal_pad).round(),
-                (self.rect.y - h - space + (i as f32 + 1.0) * line_height).round(),
+                (self.rect.bottom() - space + (i as f32 + 1.0) * line_height).round(),
                 self.font_size,
                 BLACK,
             );
@@ -186,5 +185,13 @@ impl Searcher {
     }
     pub fn is_focused(&self) -> bool {
         self.focused
+    }
+    pub fn rect(&self) -> Rect {
+        Rect::new(
+            self.tag_pos.x,
+            self.rect.y,
+            self.rect.right() - self.tag_pos.x,
+            self.rect.h,
+        )
     }
 }

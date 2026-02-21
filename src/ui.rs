@@ -1,12 +1,13 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::{Buttons, interact};
+use crate::ui::buttons::{Buttons, TO_LEFT, interact};
 use crate::ui::map_and_path::{
     compute_path_widths, draw_map_and_path, draw_nodes_lines_cached, update_selected_level,
 };
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
+use juquad::widgets::anchor::Anchor;
 use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
 use macroquad::math::f32;
 use macroquad::prelude::{
@@ -66,12 +67,14 @@ impl Ui {
         let width = screen_size.x;
         let height = screen_size.y;
         let font_size = choose_font_size(width, height);
-        let map_rect = get_map_rect(width, height, font_size);
 
         let render_target = macroquad::prelude::render_target(width as u32, height as u32);
         render_target.texture.set_filter(FilterMode::Nearest);
-        let buttons = Buttons::new(vec2(width, height), font_size);
-        let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
+        let buttons = Buttons::new(Rect::new(0.0, 0.0, width, height), font_size);
+        let searcher = Searcher::new(get_searcher_rect(buttons.rect(), font_size), font_size);
+        let buttons_rect = searcher.rect().combine_with(buttons.rect());
+        let path_rect = path_rect(width, height, font_size);
+        let map_rect = get_map_rect(buttons_rect, path_rect, font_size);
 
         log_time!(
             arrange(padding, arrangement.clone(), &mut tree, map_rect),
@@ -99,6 +102,7 @@ impl Ui {
             buttons,
         }
     }
+
     pub fn react(&mut self) {
         self.maybe_refresh_lines_cache();
         self.keys.capture_keys_this_frame();
@@ -124,7 +128,7 @@ impl Ui {
 
         if let Some(nested_nodes) = &self.selected {
             let (_, _, text_rects) =
-                compute_path_widths(self.map_rect, self.font_size, nested_nodes);
+                compute_path_widths(self.width, self.height, self.font_size, nested_nodes);
             update_selected_level(&text_rects, &mut self.level, &mut self.refresh_lines);
         }
 
@@ -151,7 +155,8 @@ impl Ui {
         // log_time!(
         draw_map_and_path(
             &self.units,
-            self.map_rect,
+            self.width,
+            self.height,
             self.font_size,
             selected,
             &self.rendered_lines,
@@ -217,7 +222,12 @@ pub fn draw_pop_up(text: &str, center: Vec2, font_size: f32) {
     let Vec2 { x, y } = center - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
 
     let measure = measure_text(text, None, font_size as u16, 1.0);
-    let button_rect = Rect::new(x, y, measure.width + horizontal_pad * 2.0, font_size * 1.5);
+    let button_rect = Rect::new(
+        x,
+        y,
+        measure.width + horizontal_pad * 2.0,
+        button_height(font_size),
+    );
     draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
     draw_text(
         text,
@@ -252,32 +262,44 @@ fn should_quit() -> bool {
     // }
 }
 
-fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
-    let small_pad = small_pad(font_size);
-    let big_pad = big_pad(font_size);
+fn get_map_rect(rect_above: Rect, rect_below: Rect, font_size: f32) -> Rect {
     let map_rect = round_rect(Rect::new(
-        small_pad,
-        small_pad + 20.0,
-        width - 2.0 * small_pad,
-        height - small_pad - big_pad,
+        rect_above.x,
+        rect_above.bottom() + button_margin(font_size),
+        rect_above.w,
+        rect_below.y - rect_above.bottom() - 2.0 * button_margin(font_size),
     ));
     map_rect
 }
+fn path_rect(width: f32, height: f32, font_size: f32) -> Rect {
+    Rect::new(
+        small_pad(font_size),
+        height - small_pad(font_size) - 2.0 * button_height(font_size),
+        width - 2.0 * small_pad(font_size),
+        2.0 * button_height(font_size),
+    )
+}
 
+pub fn button_height(font_size: f32) -> f32 {
+    font_size * 1.5
+}
 pub fn small_pad(font_size: f32) -> f32 {
     font_size * 2.5
+}
+pub fn button_margin(font_size: f32) -> f32 {
+    font_size * 1.0
 }
 
 pub fn big_pad(font_size: f32) -> f32 {
     font_size * 12.0
 }
 
-fn get_searcher_rect(map_rect: Rect, font_size: f32) -> Rect {
+fn get_searcher_rect(buttons_rect: Rect, font_size: f32) -> Rect {
     Rect::new(
-        map_rect.x,
-        map_rect.y + map_rect.h + font_size * 3.0,
-        map_rect.w,
-        font_size * 1.5,
+        small_pad(font_size),
+        buttons_rect.y,
+        buttons_rect.x - small_pad(font_size) - button_margin(font_size),
+        buttons_rect.h,
     )
 }
 
