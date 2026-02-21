@@ -175,7 +175,7 @@ impl Ui {
         self.searcher.draw_search();
         self.buttons.draw();
         if self.refresh_lines || self.refresh {
-            self.draw_regenerate_warning();
+            // self.draw_regenerate_warning();
         }
     }
 
