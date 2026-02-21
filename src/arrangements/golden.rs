@@ -1,6 +1,7 @@
 use macroquad::prelude::Rect;
 
 use crate::tree::Tree;
+use crate::ui::rect_utils::round_rect;
 
 pub fn arrange(node: &mut Tree, rect: Rect) {
     node.rect = Some(rect);
@@ -66,17 +67,21 @@ fn get_half_size(nodes: &mut [Tree]) -> Result<(usize, f32), String> {
     }
 }
 
-fn divide_rectangle_horizontally(rect: Rect, coef: f32) -> (Rect, Rect) {
+pub fn divide_rectangle_horizontally(rect: Rect, coef: f32) -> (Rect, Rect) {
     let width_1 = rect.w * coef;
     let rect_1 = Rect::new(rect.x, rect.y, width_1, rect.h);
+    let rect_1 = round_rect(rect_1);
     let rect_2 = Rect::new(rect.x + width_1, rect.y, rect.w - width_1, rect.h);
+    let rect_2 = round_rect(rect_2);
     (rect_1, rect_2)
 }
 
-fn divide_rectangle_vertically(rect: Rect, coef: f32) -> (Rect, Rect) {
+pub fn divide_rectangle_vertically(rect: Rect, coef: f32) -> (Rect, Rect) {
     let height_1 = rect.h * coef;
     let rect_1 = Rect::new(rect.x, rect.y, rect.w, height_1);
+    let rect_1 = round_rect(rect_1);
     let rect_2 = Rect::new(rect.x, rect.y + height_1, rect.w, rect.h - height_1);
+    let rect_2 = round_rect(rect_2);
     (rect_1, rect_2)
 }
 

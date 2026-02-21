@@ -9,7 +9,7 @@ use code_map::arrangements::{binary, golden, linear};
 use code_map::metrics::Metrics;
 use code_map::metrics::word_mentions::TEXT_FILE_EXTENSIONS;
 use code_map::tree::Tree;
-use code_map::ui::Ui;
+use code_map::ui::{Ui, choose_font_size_v, draw_pop_up};
 use code_map::{AnyError, log_time, metrics};
 
 const DEFAULT_WINDOW_WIDTH: i32 = 1200;
@@ -58,16 +58,27 @@ async fn main() {
     }
 }
 async fn fallible_main() -> Result<(), AnyError> {
+    let screen_size = vec2(screen_width(), screen_height());
+    draw_pop_up(
+        "Loading...",
+        screen_size * 0.5,
+        choose_font_size_v(screen_size),
+    );
+    next_frame().await;
     let args = Cli::parse();
     let mut ui = compute_ui(args.clone())?;
-    while should_continue(&ui) {
-        if ui.should_refresh() {
-            ui = log_time!(compute_ui(args.clone())?, "rearrange");
+    loop {
+        ui.react();
+        if ui.should_quit() {
+            break;
         }
         // log_time!(
         ui.draw()
         // )
         ;
+        if ui.should_refresh() {
+            ui = log_time!(compute_ui(args.clone())?, "rearrange");
+        }
         next_frame().await
     }
     Ok(())
@@ -96,26 +107,17 @@ fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
         format!("computing metrics {:?}", metric)
     );
 
-    let mut ui = Ui::new(tree, units, arrange, arrangement.clone(), padding);
-    log_time!(
-        arrange(padding, arrangement.clone(), &mut ui.tree, ui.map_rect),
-        "arrangement"
+    let screen_size = vec2(screen_width(), screen_height());
+    let ui = Ui::new(
+        tree,
+        units,
+        arrange,
+        arrangement.clone(),
+        padding,
+        screen_size,
     );
     log_time!(log_counts(&ui.tree));
     Ok(ui)
-}
-fn should_continue(_ui: &Ui) -> bool {
-    // if _ui.is_searcher_focused() {
-    //     true
-    // } else {
-    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
-        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
-    // let escape_pressed = is_key_down(KeyCode::Escape);
-    let should_quit = ctrl_q_pressed
-            // || escape_pressed
-            ;
-    !should_quit
-    // }
 }
 
 fn window_conf() -> Conf {

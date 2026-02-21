@@ -1,6 +1,6 @@
-use macroquad::prelude::Rect;
-
+use crate::arrangements::golden::{divide_rectangle_horizontally, divide_rectangle_vertically};
 use crate::tree::Tree;
+use macroquad::prelude::Rect;
 
 pub fn arrange(node: &mut Tree, rect: Rect) {
     node.rect = Some(rect);
@@ -63,20 +63,6 @@ fn get_half_size(nodes: &mut [Tree]) -> Result<(usize, f32), String> {
             half_size, nodes_size, nodes
         ))
     }
-}
-
-fn divide_rectangle_horizontally(rect: Rect, coef: f32) -> (Rect, Rect) {
-    let width_1 = rect.w * coef;
-    let rect_1 = Rect::new(rect.x, rect.y, width_1, rect.h);
-    let rect_2 = Rect::new(rect.x + width_1, rect.y, rect.w - width_1, rect.h);
-    (rect_1, rect_2)
-}
-
-fn divide_rectangle_vertically(rect: Rect, coef: f32) -> (Rect, Rect) {
-    let height_1 = rect.h * coef;
-    let rect_1 = Rect::new(rect.x, rect.y, rect.w, height_1);
-    let rect_2 = Rect::new(rect.x, rect.y + height_1, rect.w, rect.h - height_1);
-    (rect_1, rect_2)
 }
 
 pub fn squareness(rect: &Rect) -> f32 {

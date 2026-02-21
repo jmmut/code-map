@@ -1,14 +1,14 @@
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{draw_rect, is_rect_clicked, round_rect};
-use crate::ui::searcher::Searcher;
-use crate::ui::set_if_different_or_unset_if_same;
-use macroquad::color::Color;
+use crate::ui::{path_rect, set_if_different_or_unset_if_same};
+use macroquad::color::{Color, DARKGRAY};
 use macroquad::color_u8;
+use macroquad::input::mouse_position;
 use macroquad::math::f32;
 use macroquad::prelude::{
     BLACK, Camera2D, GRAY, MouseButton, Rect, RenderTarget, Vec2, WHITE, clear_background,
-    draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text, mouse_position,
-    set_camera, set_default_camera, vec2,
+    draw_rectangle, draw_rectangle_lines, draw_text, draw_texture, measure_text, set_camera,
+    set_default_camera, vec2,
 };
 use std::collections::VecDeque;
 
@@ -35,74 +35,45 @@ const fn from_hex(hex: u32) -> Color {
     color_u8!(hex / 0x10000, hex / 0x100 % 0x100, hex % 0x100, 255)
 }
 
-pub fn choose_and_draw_map_and_path(
-    tree: &Tree,
+pub fn draw_map_and_path(
     units: &str,
-    map_rect: Rect,
+    width: f32,
+    height: f32,
     font_size: f32,
-    refresh_lines: &mut bool,
-    searcher: &mut Searcher,
-    selected: &mut Option<Vec<TreeView>>,
-    level: &mut Option<usize>,
-    rendered_lines: &mut RenderTarget,
+    selected: &Option<Vec<TreeView>>,
+    rendered_lines: &RenderTarget,
+    level: Option<usize>,
+    level_hovered: &Option<usize>,
 ) {
-    searcher.update_selected(selected);
     if let Some(selected_nodes) = &selected {
-        draw_colored_map_and_path(
-            units,
-            map_rect,
-            font_size,
-            &selected_nodes,
-            level,
-            refresh_lines,
-        );
-        // refresh_lines = true;
-    } else {
-        draw_hovered_nested_nodes(units, &tree, map_rect, font_size, level, refresh_lines);
+        if selected_nodes.len() > 0 {
+            draw_path(
+                units,
+                width,
+                height,
+                font_size,
+                &selected_nodes,
+                level,
+                level_hovered,
+            );
+            draw_colored_selected_in_map(&selected_nodes, level);
+        }
     }
-
     draw_texture(rendered_lines.texture, 0., 0., WHITE);
-}
-
-fn draw_colored_map_and_path(
-    units: &str,
-    map_rect: Rect,
-    font_size: f32,
-    nested_nodes: &Vec<TreeView>,
-    level_opt: &mut Option<usize>,
-    refresh_lines: &mut bool,
-) {
-    if nested_nodes.len() > 0 {
-        draw_path(
-            units,
-            map_rect,
-            font_size,
-            nested_nodes,
-            level_opt,
-            refresh_lines,
-        );
-        draw_colored_selected_in_map(nested_nodes, level_opt);
-    }
 }
 
 fn draw_path(
     units: &str,
-    map_rect: Rect,
+    width: f32,
+    height: f32,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
-    level_opt: &mut Option<usize>,
-    refresh_lines: &mut bool,
+    level_opt: Option<usize>,
+    level_hovered: &Option<usize>,
 ) {
-    let path_y = map_rect.y + map_rect.h + font_size * 4.5;
-    let node_name_widths = compute_name_widths(nested_nodes, font_size);
-    let top_left = Vec2::new(map_rect.x, path_y);
-    draw_path_color(
-        top_left,
-        font_size,
-        &node_name_widths,
-        level_opt,
-        refresh_lines,
-    );
+    let (node_name_widths, top_left, text_rects) =
+        compute_path_widths(width, height, font_size, nested_nodes);
+    draw_path_color(text_rects, level_opt, level_hovered);
     draw_path_text(
         units,
         top_left,
@@ -110,8 +81,19 @@ fn draw_path(
         nested_nodes,
         level_opt,
         node_name_widths,
-        refresh_lines,
     );
+}
+
+pub fn compute_path_widths(
+    width: f32,
+    height: f32,
+    font_size: f32,
+    nested_nodes: &Vec<TreeView>,
+) -> (VecDeque<f32>, Vec2, Vec<Rect>) {
+    let path_rect = path_rect(width, height, font_size);
+    let node_name_widths = compute_name_widths(nested_nodes, font_size);
+    let text_rects = path_rects(path_rect.point(), font_size, &node_name_widths);
+    (node_name_widths, path_rect.point(), text_rects)
 }
 
 fn compute_name_widths(nested_nodes: &Vec<TreeView>, font_size: f32) -> VecDeque<f32> {
@@ -124,21 +106,48 @@ fn compute_name_widths(nested_nodes: &Vec<TreeView>, font_size: f32) -> VecDeque
         .collect()
 }
 
-fn draw_path_color(
-    top_left: Vec2,
-    font_size: f32,
-    node_name_widths: &VecDeque<f32>,
-    level_opt: &mut Option<usize>,
-    refresh_lines: &mut bool,
-) {
+fn path_rects(top_left: Vec2, font_size: f32, node_name_widths: &VecDeque<f32>) -> Vec<Rect> {
     let mut previous_width = 0.0;
-    for (i, width) in node_name_widths.iter().enumerate() {
-        let rect = Rect::new(
+    let mut rects = Vec::new();
+    for width in node_name_widths {
+        rects.push(Rect::new(
             top_left.x + previous_width,
             top_left.y,
             width - previous_width,
             1.5 * font_size,
-        );
+        ));
+        previous_width = *width;
+    }
+    rects
+}
+pub fn update_selected_level(
+    text_rects: &Vec<Rect>,
+    level_opt: &mut Option<usize>,
+    level_hovered: &mut Option<usize>,
+    refresh_lines: &mut bool,
+) {
+    let mut any_hovered = false;
+    for (i, rect) in text_rects.iter().enumerate() {
+        if is_rect_clicked(rect, MouseButton::Left) {
+            set_if_different_or_unset_if_same(level_opt, i);
+            *refresh_lines = true;
+        }
+        if is_rect_clicked(rect, MouseButton::Right) {
+            *refresh_lines = true;
+            *level_opt = None;
+            return;
+        }
+        if rect.contains(Vec2::from(mouse_position())) {
+            *level_hovered = Some(i);
+            any_hovered = true;
+        }
+    }
+    if !any_hovered {
+        *level_hovered = None;
+    }
+}
+fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>, level_hovered: &Option<usize>) {
+    for (i, rect) in text_rects.into_iter().enumerate() {
         if level_opt.is_some_and(|level| level < i) {
             draw_rectangle_lines(
                 rect.x,
@@ -151,11 +160,9 @@ fn draw_path_color(
         } else {
             draw_rect(rect, COLORS[i % COLORS.len()]);
         }
-        if is_rect_clicked(&rect, MouseButton::Left) {
-            set_if_different_or_unset_if_same(level_opt, i);
-            *refresh_lines = true;
+        if level_hovered.is_some_and(|level| level == i) {
+            draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 2.0, DARKGRAY);
         }
-        previous_width = *width;
     }
 }
 
@@ -164,27 +171,20 @@ fn draw_path_text(
     top_left: Vec2,
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
-    level_opt: &mut Option<usize>,
+    level_opt: Option<usize>,
     mut node_name_widths: VecDeque<f32>,
-    refresh_lines: &mut bool,
 ) {
     node_name_widths.push_front(0.0);
-    let previous_width = *node_name_widths.back().unwrap();
-    let path_rect = Rect::new(top_left.x, top_left.y, previous_width, 1.5 * font_size);
-    if is_rect_clicked(&path_rect, MouseButton::Right) {
-        *level_opt = None;
-        *refresh_lines = true;
-    }
     let deepest_child = nested_nodes.last().unwrap();
     let size = if let Some(level) = level_opt {
         nested_nodes
-            .get(*level)
+            .get(level)
             .map_or(deepest_child.size, |node| node.size)
     } else {
         deepest_child.size
     };
     let selected_node_name = if let Some(level) = level_opt {
-        if let Some(node) = nested_nodes.get(*level) {
+        if let Some(node) = nested_nodes.get(level) {
             Some(node.name.clone())
         } else {
             None
@@ -222,8 +222,8 @@ fn draw_path_text(
     let text_width = measure_text(&size_text, None, font_size as u16, 1.0).width;
     let pad = 0.5 * font_size;
     let index = if let Some(level) = level_opt {
-        if *level < node_name_widths.len() {
-            *level
+        if level < node_name_widths.len() {
+            level
         } else {
             node_name_widths.len() - 2
         }
@@ -264,7 +264,7 @@ fn format_units(value: i64, units: &str) -> String {
     )
 }
 
-fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: &mut Option<usize>) {
+fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: Option<usize>) {
     for (i, node) in nested_nodes.iter().enumerate() {
         if let Some(node_rect) = node.rect {
             let Rect { x, y, w, h } = round_rect(node_rect);
@@ -277,28 +277,6 @@ fn draw_colored_selected_in_map(nested_nodes: &Vec<TreeView>, level_opt: &mut Op
         } else {
             // a null rect can happen for empty folders or if a file has size 0
         }
-    }
-}
-
-fn draw_hovered_nested_nodes(
-    units: &str,
-    treemap: &Tree,
-    map_rect: Rect,
-    font_size: f32,
-    level: &mut Option<usize>,
-    refresh_lines: &mut bool,
-) {
-    let mouse_position = Vec2::from(mouse_position());
-    if map_rect.contains(mouse_position) {
-        let nodes_pointed = treemap.get_nested_by_position(mouse_position);
-        draw_colored_map_and_path(
-            units,
-            map_rect,
-            font_size,
-            &TreeView::from_nodes(&nodes_pointed),
-            level,
-            refresh_lines,
-        );
     }
 }
 
@@ -325,22 +303,29 @@ pub fn draw_nodes_lines_cached(
 fn draw_nodes_lines(tree: &Tree, map_rect: Rect, selected: Option<usize>, font_size: f32) {
     let Rect { x, y, w, h } = round_rect(map_rect);
     draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
-    draw_nodes_lines_recursive(
-        &tree,
-        map_rect,
-        selected,
-        font_size,
-        1.0,
-        BLACK,
-        Color::new(0.6, 0.6, 0.6, 1.00),
-        0,
-    );
+
+    // the next duplicate implementation only saves 2-4ms down to ~54ms and ~65ms when drawing all
+    // rects or when drawing some details greyed out, respectively. Duplication might not be worth it.
+    if let Some(selected) = selected {
+        draw_nodes_lines_recursive(
+            &tree,
+            map_rect,
+            selected,
+            font_size,
+            1.0,
+            BLACK,
+            Color::new(0.6, 0.6, 0.6, 1.00),
+            0,
+        );
+    } else {
+        draw_all_nodes_lines_recursive(&tree, map_rect, font_size, 1.0, BLACK, 0);
+    }
 }
 
 fn draw_nodes_lines_recursive(
     node: &Tree,
     map_rect: Rect,
-    level: Option<usize>,
+    level: usize,
     font_size: f32,
     thickness: f32,
     color_focus: Color,
@@ -362,27 +347,129 @@ fn draw_nodes_lines_recursive(
         //     font_size,
         //     BLACK,
         // );
-        let Rect { x, y, w, h } = round_rect(rect);
+        let Rect { x, y, w, h } = rect;
         if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
+            if next_level > level {
+                for child in &node.children {
+                    draw_detail_nodes_lines_recursive(
+                        child,
+                        map_rect,
+                        font_size,
+                        thickness,
+                        color_details,
+                        next_level,
+                    );
+                }
+            } else {
+                for child in &node.children {
+                    draw_nodes_lines_recursive(
+                        child,
+                        map_rect,
+                        level,
+                        font_size,
+                        thickness,
+                        color_focus,
+                        color_details,
+                        next_level,
+                    );
+                }
+            }
+
+            let (color, force_draw) = if current_level > level {
+                (color_details, node.children.len() == 0)
+            } else {
+                (color_focus, true)
+            };
+            if force_draw {
+                draw_rectangle_lines(x, y, w, h, thickness, color);
+            }
+        }
+    }
+}
+
+fn draw_all_nodes_lines_recursive(
+    node: &Tree,
+    map_rect: Rect,
+    font_size: f32,
+    thickness: f32,
+    color_focus: Color,
+    current_level: usize,
+) {
+    if let Some(rect) = node.rect {
+        // draw_text(
+        //     &node.name,
+        //     x + 1.5 * font_size,
+        //     y + 1.5 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        // draw_text(
+        //     &node.size.to_string(),
+        //     x + 1.5 * font_size,
+        //     y + 3.0 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        let Rect { x, y, w, h } = rect;
+        if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
             for child in &node.children {
-                draw_nodes_lines_recursive(
+                draw_all_nodes_lines_recursive(
                     child,
                     map_rect,
-                    level,
                     font_size,
                     thickness,
                     color_focus,
-                    color_details,
-                    current_level + 1,
+                    next_level,
                 );
             }
 
-            let color = if level.is_some_and(|level| current_level > level) {
-                color_details
-            } else {
-                color_focus
-            };
-            draw_rectangle_lines(x, y, w, h, thickness, color);
+            if node.children.len() == 0 {
+                draw_rectangle_lines(x, y, w, h, thickness, color_focus);
+            }
+        }
+    }
+}
+
+fn draw_detail_nodes_lines_recursive(
+    node: &Tree,
+    map_rect: Rect,
+    font_size: f32,
+    thickness: f32,
+    color_detail: Color,
+    current_level: usize,
+) {
+    if let Some(rect) = node.rect {
+        // draw_text(
+        //     &node.name,
+        //     x + 1.5 * font_size,
+        //     y + 1.5 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        // draw_text(
+        //     &node.size.to_string(),
+        //     x + 1.5 * font_size,
+        //     y + 3.0 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        let Rect { x, y, w, h } = rect;
+        if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
+            for child in &node.children {
+                draw_detail_nodes_lines_recursive(
+                    child,
+                    map_rect,
+                    font_size,
+                    thickness,
+                    color_detail,
+                    next_level,
+                );
+            }
+
+            draw_rectangle_lines(x, y, w, h, thickness, color_detail);
         }
     }
 }

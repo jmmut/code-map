@@ -1,10 +1,13 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::draw_buttons;
-use crate::ui::map_and_path::{choose_and_draw_map_and_path, draw_nodes_lines_cached};
+use crate::ui::buttons::{Buttons, interact};
+use crate::ui::map_and_path::{
+    compute_path_widths, draw_map_and_path, draw_nodes_lines_cached, update_selected_level,
+};
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
+use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
 use macroquad::math::f32;
 use macroquad::prelude::{
     BLACK, Color, FilterMode, LIGHTGRAY, MouseButton, Rect, RenderTarget, Vec2, clear_background,
@@ -28,7 +31,9 @@ pub struct Ui {
     searcher: Searcher,
     font_size: f32,
     selected: Option<Vec<TreeView>>,
+    hovered: Option<Vec<TreeView>>,
     level: Option<usize>,
+    level_hovered: Option<usize>,
     keys: key_queue::OrderedEventHandler,
     arrange: fn(f32, String, &mut Tree, Rect),
     arrangement: String,
@@ -38,25 +43,43 @@ pub struct Ui {
     refresh: bool,
     refresh_lines: bool,
     rendered_lines: RenderTarget,
+    should_quit: bool,
+    buttons: Buttons,
+}
+
+pub enum Event {
+    Quit,
+    RefreshMetrics,
+    CopyToClipboard,
+    Squareness,
+    Rearrange { screen_size: Vec2 },
 }
 
 impl Ui {
     pub fn new(
-        tree: Tree,
+        mut tree: Tree,
         units: &str,
         arrange: fn(f32, String, &mut Tree, Rect),
         arrangement: String,
         padding: f32,
+        screen_size: Vec2,
     ) -> Self {
-        let width = screen_width();
-        let height = screen_height();
+        let width = screen_size.x;
+        let height = screen_size.y;
         let font_size = choose_font_size(width, height);
-        let map_rect = get_map_rect(width, height, font_size);
-
-        let searcher = Searcher::new(get_searcher_rect(map_rect, font_size), font_size);
 
         let render_target = macroquad::prelude::render_target(width as u32, height as u32);
         render_target.texture.set_filter(FilterMode::Nearest);
+        let buttons = Buttons::new(Rect::new(0.0, 0.0, width, height), font_size);
+        let searcher = Searcher::new(get_searcher_rect(buttons.rect(), font_size), font_size);
+        let buttons_rect = searcher.rect().combine_with(buttons.rect());
+        let path_rect = path_rect(width, height, font_size);
+        let map_rect = get_map_rect(buttons_rect, path_rect, font_size);
+
+        log_time!(
+            arrange(padding, arrangement.clone(), &mut tree, map_rect),
+            "arrangement"
+        );
         Self {
             tree,
             units: units.to_string(),
@@ -64,7 +87,9 @@ impl Ui {
             font_size,
             searcher,
             selected: None,
+            hovered: None,
             level: None,
+            level_hovered: None,
             keys: key_queue::OrderedEventHandler::new(),
             arrange,
             width,
@@ -74,10 +99,87 @@ impl Ui {
             refresh: false,
             refresh_lines: true,
             rendered_lines: render_target,
+            should_quit: false,
+            buttons,
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn react(&mut self) {
+        self.maybe_refresh_lines_cache();
+        self.keys.capture_keys_this_frame();
+
+        if should_quit() {
+            self.should_quit = true;
+        }
+        if interact(&mut self.buttons.copy_to_clipboard).is_clicked() {
+            copy_selected_to_clipboard(&self.selected);
+        }
+        if interact(&mut self.buttons.refresh).is_clicked() {
+            self.refresh = true;
+        }
+        let screen_size = vec2(screen_width(), screen_height());
+        if screen_size != vec2(self.width, self.height) {
+            self.rearrange(screen_size);
+        }
+
+        self.searcher.update_selected(&mut self.selected);
+        select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
+        self.searcher
+            .react(&self.keys.keycode_event_queue, &self.tree);
+
+        if let Some(nested_nodes) = &self.selected {
+            let (_, _, text_rects) =
+                compute_path_widths(self.width, self.height, self.font_size, nested_nodes);
+            update_selected_level(
+                &text_rects,
+                &mut self.level,
+                &mut self.level_hovered,
+                &mut self.refresh_lines,
+            );
+        }
+
+        let mouse_position = Vec2::from(mouse_position());
+        if self.map_rect.contains(mouse_position) {
+            let hovered = self.tree.get_nested_by_position(mouse_position);
+            self.hovered = Some(TreeView::from_nodes(&hovered));
+        } else {
+            self.hovered = None;
+        }
+    }
+
+    pub fn should_quit(&self) -> bool {
+        self.should_quit
+    }
+    pub fn draw(&self) {
+        clear_background(LIGHTGRAY);
+
+        let selected = if self.selected.is_some() {
+            &self.selected
+        } else {
+            &self.hovered
+        };
+        // log_time!(
+        draw_map_and_path(
+            &self.units,
+            self.width,
+            self.height,
+            self.font_size,
+            selected,
+            &self.rendered_lines,
+            self.level,
+            &self.level_hovered,
+        )
+        // , "choose_and_draw_map_and_path" )
+        ;
+
+        self.searcher.draw_search();
+        self.buttons.draw();
+        if self.refresh_lines || self.refresh {
+            // self.draw_regenerate_warning();
+        }
+    }
+
+    fn maybe_refresh_lines_cache(&mut self) {
         if self.refresh_lines {
             log_time!(
                 draw_nodes_lines_cached(
@@ -93,102 +195,25 @@ impl Ui {
             );
             self.refresh_lines = false;
         }
-        self.maybe_rearrange();
-        self.keys.capture_keys_this_frame();
-
-        clear_background(LIGHTGRAY);
-
-        // log_time!(
-        choose_and_draw_map_and_path(
-                &self.tree,
-                &self.units,
-                self.map_rect,
-                self.font_size,
-                &mut self.refresh_lines,
-                &mut self.searcher,
-                &mut self.selected,
-                &mut self.level,
-                &mut self.rendered_lines,
-            )
-        // , "choose_and_draw_map_and_path" )
-        ;
-
-        select_node_with_mouse(&self.tree, self.map_rect, &mut self.selected);
-
-        self.searcher
-            .draw_search(&self.tree, &self.keys.keycode_event_queue);
-
-        self.act_on_buttons();
-        if self.refresh_lines || self.refresh {
-            self.draw_regenerate_warning();
-        }
     }
 
-    fn draw_regenerate_warning(&mut self) {
-        let font_size = self.font_size * 4.0;
-        let text = "Re-drawing grid...";
-        let measures = measure_text(text, None, font_size as u16, 1.0);
-        let horizontal_pad = font_size * 1.0;
-        let Vec2 { x, y } =
-            self.map_rect.center() - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
+    fn draw_regenerate_warning(&self) {
+        draw_pop_up("Re-drawing grid...", self.map_rect.center(), self.font_size);
+    }
 
-        let measure = measure_text(text, None, font_size as u16, 1.0);
-        let button_rect = Rect::new(x, y, measure.width + horizontal_pad * 2.0, font_size * 1.5);
-        draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
-        draw_text(
-            text,
-            button_rect.x + horizontal_pad,
-            button_rect.y + font_size,
-            font_size,
-            BLACK,
+    fn rearrange(&mut self, new_screen_size: Vec2) {
+        let mut empty_tree = Tree::new_from_size("empty".to_string(), 0);
+        std::mem::swap(&mut empty_tree, &mut self.tree);
+        *self = Ui::new(
+            empty_tree,
+            &self.units,
+            self.arrange,
+            self.arrangement.clone(),
+            self.padding,
+            new_screen_size,
         );
     }
 
-    fn maybe_rearrange(&mut self) {
-        let new_width = screen_width();
-        let new_height = screen_height();
-        if new_width != self.width || new_height != self.height {
-            self.selected = None;
-            self.width = new_width;
-            self.height = new_height;
-            self.map_rect = get_map_rect(self.width, self.height, self.font_size);
-            (self.arrange)(
-                self.padding,
-                self.arrangement.clone(),
-                &mut self.tree,
-                self.map_rect,
-            );
-            self.searcher
-                .position(get_searcher_rect(self.map_rect, self.font_size));
-
-            let render_target =
-                // log_time!(
-                macroquad::prelude::render_target(self.width as u32, self.height as u32)
-                // , "reallocate lines texture")
-            ;
-            render_target.texture.set_filter(FilterMode::Nearest);
-            self.rendered_lines = render_target;
-            self.refresh = true;
-            self.refresh_lines = true;
-        }
-    }
-
-    fn act_on_buttons(&mut self) {
-        let buttons = draw_buttons(self.map_rect, self.font_size);
-        if buttons.copied {
-            if let Some(parts) = &self.selected {
-                let path = parts.last().map_or("", |view| &view.name);
-                let ctx = ClipboardContext::new().unwrap();
-                // let old = ctx.get_text().unwrap();
-                // println!("copying {path} to clipboard, was {old}");
-                ctx.set_text(path.to_string()).unwrap();
-            }
-        }
-        self.refresh = buttons.refresh;
-        if buttons.squareness {
-            println!("squareness: {}", self.tree.compute_squareness())
-        }
-    }
     pub fn should_refresh(&self) -> bool {
         self.refresh
     }
@@ -197,28 +222,98 @@ impl Ui {
     }
 }
 
-fn get_map_rect(width: f32, height: f32, font_size: f32) -> Rect {
-    let small_pad = font_size * 2.5;
-    let big_pad = font_size * 12.0;
+pub fn draw_pop_up(text: &str, center: Vec2, font_size: f32) {
+    let font_size = font_size * 4.0;
+    let measures = measure_text(text, None, font_size as u16, 1.0);
+    let horizontal_pad = font_size * 1.0;
+    let Vec2 { x, y } = center - vec2(measures.width * 0.5, 0.0) - horizontal_pad;
+
+    let measure = measure_text(text, None, font_size as u16, 1.0);
+    let button_rect = Rect::new(
+        x,
+        y,
+        measure.width + horizontal_pad * 2.0,
+        button_height(font_size),
+    );
+    draw_rect(button_rect, Color::new(0.95, 0.95, 0.95, 0.95));
+    draw_text(
+        text,
+        button_rect.x + horizontal_pad,
+        button_rect.y + font_size,
+        font_size,
+        BLACK,
+    );
+}
+
+fn copy_selected_to_clipboard(selected: &Option<Vec<TreeView>>) {
+    if let Some(parts) = selected {
+        let path = parts.last().map_or("", |view| &view.name);
+        let ctx = ClipboardContext::new().unwrap();
+        // let old = ctx.get_text().unwrap();
+        // println!("copying {path} to clipboard, was {old}");
+        ctx.set_text(path.to_string()).unwrap();
+    }
+}
+
+fn should_quit() -> bool {
+    // if _ui.is_searcher_focused() {
+    //     true
+    // } else {
+    let ctrl_q_pressed = is_key_pressed(KeyCode::Q)
+        && (is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl));
+    // let escape_pressed = is_key_down(KeyCode::Escape);
+    let should_quit = ctrl_q_pressed
+            // || escape_pressed
+            ;
+    should_quit
+    // }
+}
+
+fn get_map_rect(rect_above: Rect, rect_below: Rect, font_size: f32) -> Rect {
     let map_rect = round_rect(Rect::new(
-        small_pad,
-        small_pad,
-        width - 2.0 * small_pad,
-        height - small_pad - big_pad,
+        rect_above.x,
+        rect_above.bottom() + button_margin(font_size),
+        rect_above.w,
+        rect_below.y - rect_above.bottom() - 2.0 * button_margin(font_size),
     ));
     map_rect
 }
-
-fn get_searcher_rect(map_rect: Rect, font_size: f32) -> Rect {
+fn path_rect(width: f32, height: f32, font_size: f32) -> Rect {
     Rect::new(
-        map_rect.x,
-        map_rect.y + map_rect.h + font_size * 3.0,
-        map_rect.w,
-        font_size * 1.5,
+        small_pad(font_size),
+        height - small_pad(font_size) - 2.0 * button_height(font_size),
+        width - 2.0 * small_pad(font_size),
+        2.0 * button_height(font_size),
     )
 }
 
-fn choose_font_size(width: f32, height: f32) -> f32 {
+pub fn button_height(font_size: f32) -> f32 {
+    font_size * 1.5
+}
+pub fn small_pad(font_size: f32) -> f32 {
+    font_size * 2.5
+}
+pub fn button_margin(font_size: f32) -> f32 {
+    font_size * 1.0
+}
+
+pub fn big_pad(font_size: f32) -> f32 {
+    font_size * 12.0
+}
+
+fn get_searcher_rect(buttons_rect: Rect, font_size: f32) -> Rect {
+    Rect::new(
+        small_pad(font_size),
+        buttons_rect.y,
+        buttons_rect.x - small_pad(font_size) - button_margin(font_size),
+        buttons_rect.h,
+    )
+}
+
+pub fn choose_font_size_v(screen_size: Vec2) -> f32 {
+    choose_font_size(screen_size.x, screen_size.y)
+}
+pub fn choose_font_size(width: f32, height: f32) -> f32 {
     let min_side = width.min(height * 16.0 / 9.0);
     FONT_SIZE
         * if min_side < 1600.0 {

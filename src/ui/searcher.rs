@@ -21,6 +21,7 @@ pub struct Searcher {
     results: Vec<String>,
     nested_results: Option<Vec<TreeView>>,
     result_changed: bool,
+    input_text: InputText,
 }
 
 impl Searcher {
@@ -36,16 +37,16 @@ impl Searcher {
             focused: false,
             nested_results: None,
             result_changed: false,
+            input_text: InputText::new(Rect::default(), "".to_string(), font_size),
         };
         searcher.position(rect);
         searcher
     }
     pub fn position(&mut self, mut rect: Rect) {
         let text_dimensions = measure_text(&self.tag, None, self.font_size as u16, 1.0);
-        self.tag_pos = Vec2::new(rect.x, rect.y);
+        self.tag_pos = Vec2::new(rect.x, rect.y + self.font_size);
         rect.x += text_dimensions.width;
         rect.w -= text_dimensions.width;
-        rect.y -= self.font_size;
         self.rect = rect;
     }
     pub fn get_new_result(&mut self) -> Option<&Vec<TreeView>> {
@@ -69,8 +70,8 @@ impl Searcher {
         }
     }
 
-    pub fn draw_search(&mut self, treemap: &Tree, keys: &VecDeque<InputCharacter>) {
-        self.draw_search_box(keys, treemap);
+    pub fn draw_search(&self) {
+        self.draw_search_box();
         if self.focused {
             let results = &self.results;
             let line_height = 1.2 * self.font_size;
@@ -83,21 +84,11 @@ impl Searcher {
         }
     }
 
-    fn draw_search_box(&mut self, keys: &VecDeque<InputCharacter>, treemap: &Tree) {
-        draw_text(
-            &self.tag,
-            self.tag_pos.x,
-            self.tag_pos.y,
-            self.font_size,
-            BLACK,
-        );
-
-        let previous_search = self.search_word.clone();
-        let mut input_text = InputText::new(self.rect, &mut self.search_word, keys, self.font_size);
-        input_text.interact(self.focused);
-        input_text.render();
-
-        let mut should_search = previous_search != self.search_word;
+    pub fn react(&mut self, keys: &VecDeque<InputCharacter>, treemap: &Tree) {
+        let mut input_text = InputText::new(self.rect, self.search_word.clone(), self.font_size);
+        input_text.interact(self.focused, keys);
+        let mut should_search = self.search_word != input_text.text;
+        self.search_word = input_text.text.clone();
         self.result_changed = should_search;
 
         if !self.is_focused() && is_key_pressed(KeyCode::F) {
@@ -128,6 +119,18 @@ impl Searcher {
                 self.nested_results = Some(Vec::new());
             }
         }
+
+        self.input_text = input_text;
+    }
+    fn draw_search_box(&self) {
+        draw_text(
+            &self.tag,
+            self.tag_pos.x,
+            self.tag_pos.y,
+            self.font_size,
+            BLACK,
+        );
+        self.input_text.render();
     }
 
     fn draw_candidates_dropdown(
@@ -141,11 +144,11 @@ impl Searcher {
         let w = dimensions.width + 2.0 * horizontal_pad;
         let h = (results.len() as f32 + 0.5) * line_height;
         let space = 0.0 * line_height;
-        draw_rectangle(self.rect.x, self.rect.y - h - space, w, h, LIGHTGRAY);
-        draw_rectangle_lines(self.rect.x, self.rect.y - h - space, w, h, 2.0, BLACK);
+        draw_rectangle(self.rect.x, self.rect.bottom() - space, w, h, LIGHTGRAY);
+        draw_rectangle_lines(self.rect.x, self.rect.bottom() - space, w, h, 2.0, BLACK);
         draw_rectangle_lines(
             self.rect.x + horizontal_pad * 0.5,
-            self.rect.y + horizontal_pad * 0.5 - h - space,
+            self.rect.bottom() + horizontal_pad * 0.5 - space,
             w - horizontal_pad,
             line_height,
             2.0,
@@ -155,14 +158,14 @@ impl Searcher {
             draw_text(
                 result,
                 (self.rect.x + horizontal_pad).round(),
-                (self.rect.y - h - space + (i as f32 + 1.0) * line_height).round(),
+                (self.rect.bottom() - space + (i as f32 + 1.0) * line_height).round(),
                 self.font_size,
                 BLACK,
             );
         }
     }
 
-    fn draw_no_results_tooltip(&mut self, line_height: f32, horizontal_pad: f32) {
+    fn draw_no_results_tooltip(&self, line_height: f32, horizontal_pad: f32) {
         let dimensions = measure_text(&self.search_word, None, self.font_size as u16, 1.0);
         draw_text(
             "No results",
@@ -182,5 +185,13 @@ impl Searcher {
     }
     pub fn is_focused(&self) -> bool {
         self.focused
+    }
+    pub fn rect(&self) -> Rect {
+        Rect::new(
+            self.tag_pos.x,
+            self.rect.y,
+            self.rect.right() - self.tag_pos.x,
+            self.rect.h,
+        )
     }
 }

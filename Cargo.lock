@@ -254,6 +254,7 @@ dependencies = [
  "git-version",
  "git2",
  "ignore",
+ "juquad",
  "macroquad",
 ]
 
@@ -538,6 +539,14 @@ name = "jpeg-decoder"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5d4a7da358eff58addd2877a45865158f0d78c911d43a5784ceb7bbf52833b0"
+
+[[package]]
+name = "juquad"
+version = "0.13.4"
+source = "git+https://github.com/jmmut/juquad.git?tag=0.13.4#44ed5005a72c8231171322fac25f07aad5df6e28"
+dependencies = [
+ "macroquad",
+]
 
 [[package]]
 name = "lazy_static"
