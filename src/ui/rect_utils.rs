@@ -8,7 +8,7 @@ pub fn round_rect(rect: Rect) -> Rect {
     let rounded_y = rect.y.round();
     Rect::new(
         rounded_x,
-        rect.y.round(),
+        rounded_y,
         (rect.x + rect.w).round() - rounded_x,
         (rect.y + rect.h).round() - rounded_y,
     )

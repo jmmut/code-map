@@ -303,22 +303,29 @@ pub fn draw_nodes_lines_cached(
 fn draw_nodes_lines(tree: &Tree, map_rect: Rect, selected: Option<usize>, font_size: f32) {
     let Rect { x, y, w, h } = round_rect(map_rect);
     draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
-    draw_nodes_lines_recursive(
-        &tree,
-        map_rect,
-        selected,
-        font_size,
-        1.0,
-        BLACK,
-        Color::new(0.6, 0.6, 0.6, 1.00),
-        0,
-    );
+
+    // the next duplicate implementation only saves 2-4ms down to ~54ms and ~65ms when drawing all
+    // rects or when drawing some details greyed out, respectively. Duplication might not be worth it.
+    if let Some(selected) = selected {
+        draw_nodes_lines_recursive(
+            &tree,
+            map_rect,
+            selected,
+            font_size,
+            1.0,
+            BLACK,
+            Color::new(0.6, 0.6, 0.6, 1.00),
+            0,
+        );
+    } else {
+        draw_all_nodes_lines_recursive(&tree, map_rect, font_size, 1.0, BLACK, 0);
+    }
 }
 
 fn draw_nodes_lines_recursive(
     node: &Tree,
     map_rect: Rect,
-    level: Option<usize>,
+    level: usize,
     font_size: f32,
     thickness: f32,
     color_focus: Color,
@@ -342,25 +349,127 @@ fn draw_nodes_lines_recursive(
         // );
         let Rect { x, y, w, h } = round_rect(rect);
         if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
+            if next_level > level {
+                for child in &node.children {
+                    draw_detail_nodes_lines_recursive(
+                        child,
+                        map_rect,
+                        font_size,
+                        thickness,
+                        color_details,
+                        next_level,
+                    );
+                }
+            } else {
+                for child in &node.children {
+                    draw_nodes_lines_recursive(
+                        child,
+                        map_rect,
+                        level,
+                        font_size,
+                        thickness,
+                        color_focus,
+                        color_details,
+                        next_level,
+                    );
+                }
+            }
+
+            let (color, force_draw) = if current_level > level {
+                (color_details, node.children.len() == 0)
+            } else {
+                (color_focus, true)
+            };
+            if force_draw {
+                draw_rectangle_lines(x, y, w, h, thickness, color);
+            }
+        }
+    }
+}
+
+fn draw_all_nodes_lines_recursive(
+    node: &Tree,
+    map_rect: Rect,
+    font_size: f32,
+    thickness: f32,
+    color_focus: Color,
+    current_level: usize,
+) {
+    if let Some(rect) = node.rect {
+        // draw_text(
+        //     &node.name,
+        //     x + 1.5 * font_size,
+        //     y + 1.5 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        // draw_text(
+        //     &node.size.to_string(),
+        //     x + 1.5 * font_size,
+        //     y + 3.0 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        let Rect { x, y, w, h } = round_rect(rect);
+        if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
             for child in &node.children {
-                draw_nodes_lines_recursive(
+                draw_all_nodes_lines_recursive(
                     child,
                     map_rect,
-                    level,
                     font_size,
                     thickness,
                     color_focus,
-                    color_details,
-                    current_level + 1,
+                    next_level,
                 );
             }
 
-            let color = if level.is_some_and(|level| current_level > level) {
-                color_details
-            } else {
-                color_focus
-            };
-            draw_rectangle_lines(x, y, w, h, thickness, color);
+            if node.children.len() == 0 {
+                draw_rectangle_lines(x, y, w, h, thickness, color_focus);
+            }
+        }
+    }
+}
+
+fn draw_detail_nodes_lines_recursive(
+    node: &Tree,
+    map_rect: Rect,
+    font_size: f32,
+    thickness: f32,
+    color_detail: Color,
+    current_level: usize,
+) {
+    if let Some(rect) = node.rect {
+        // draw_text(
+        //     &node.name,
+        //     x + 1.5 * font_size,
+        //     y + 1.5 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        // draw_text(
+        //     &node.size.to_string(),
+        //     x + 1.5 * font_size,
+        //     y + 3.0 * font_size,
+        //     font_size,
+        //     BLACK,
+        // );
+        let Rect { x, y, w, h } = round_rect(rect);
+        if w >= 1.0 && h >= 1.0 {
+            let next_level = current_level + 1;
+            for child in &node.children {
+                draw_detail_nodes_lines_recursive(
+                    child,
+                    map_rect,
+                    font_size,
+                    thickness,
+                    color_detail,
+                    next_level,
+                );
+            }
+
+            draw_rectangle_lines(x, y, w, h, thickness, color_detail);
         }
     }
 }

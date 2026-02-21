@@ -5,6 +5,10 @@ edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.profiling]
+inherits = "release"
+debug = true
+
 [dependencies]
 macroquad = "=0.3.24"
 clap = {version = "=4.3.4", features = ["derive"]}
