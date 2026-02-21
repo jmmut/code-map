@@ -347,7 +347,7 @@ fn draw_nodes_lines_recursive(
         //     font_size,
         //     BLACK,
         // );
-        let Rect { x, y, w, h } = round_rect(rect);
+        let Rect { x, y, w, h } = rect;
         if w >= 1.0 && h >= 1.0 {
             let next_level = current_level + 1;
             if next_level > level {
@@ -411,7 +411,7 @@ fn draw_all_nodes_lines_recursive(
         //     font_size,
         //     BLACK,
         // );
-        let Rect { x, y, w, h } = round_rect(rect);
+        let Rect { x, y, w, h } = rect;
         if w >= 1.0 && h >= 1.0 {
             let next_level = current_level + 1;
             for child in &node.children {
@@ -455,7 +455,7 @@ fn draw_detail_nodes_lines_recursive(
         //     font_size,
         //     BLACK,
         // );
-        let Rect { x, y, w, h } = round_rect(rect);
+        let Rect { x, y, w, h } = rect;
         if w >= 1.0 && h >= 1.0 {
             let next_level = current_level + 1;
             for child in &node.children {
