@@ -1,13 +1,12 @@
 use crate::log_time;
 use crate::tree::{Tree, TreeView};
-use crate::ui::buttons::{Buttons, TO_LEFT, interact};
+use crate::ui::buttons::{Buttons, interact};
 use crate::ui::map_and_path::{
     compute_path_widths, draw_map_and_path, draw_nodes_lines_cached, update_selected_level,
 };
 use crate::ui::rect_utils::{draw_rect, round_rect};
 use crate::ui::searcher::Searcher;
 use clipboard_rs::{Clipboard, ClipboardContext};
-use juquad::widgets::anchor::Anchor;
 use macroquad::input::{KeyCode, is_key_down, is_key_pressed};
 use macroquad::math::f32;
 use macroquad::prelude::{
@@ -34,6 +33,7 @@ pub struct Ui {
     selected: Option<Vec<TreeView>>,
     hovered: Option<Vec<TreeView>>,
     level: Option<usize>,
+    level_hovered: Option<usize>,
     keys: key_queue::OrderedEventHandler,
     arrange: fn(f32, String, &mut Tree, Rect),
     arrangement: String,
@@ -89,6 +89,7 @@ impl Ui {
             selected: None,
             hovered: None,
             level: None,
+            level_hovered: None,
             keys: key_queue::OrderedEventHandler::new(),
             arrange,
             width,
@@ -129,7 +130,12 @@ impl Ui {
         if let Some(nested_nodes) = &self.selected {
             let (_, _, text_rects) =
                 compute_path_widths(self.width, self.height, self.font_size, nested_nodes);
-            update_selected_level(&text_rects, &mut self.level, &mut self.refresh_lines);
+            update_selected_level(
+                &text_rects,
+                &mut self.level,
+                &mut self.level_hovered,
+                &mut self.refresh_lines,
+            );
         }
 
         let mouse_position = Vec2::from(mouse_position());
@@ -161,6 +167,7 @@ impl Ui {
             selected,
             &self.rendered_lines,
             self.level,
+            &self.level_hovered,
         )
         // , "choose_and_draw_map_and_path" )
         ;

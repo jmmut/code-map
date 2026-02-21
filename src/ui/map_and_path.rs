@@ -1,8 +1,9 @@
 use crate::tree::{Tree, TreeView};
 use crate::ui::rect_utils::{draw_rect, is_rect_clicked, round_rect};
 use crate::ui::{path_rect, set_if_different_or_unset_if_same};
-use macroquad::color::Color;
+use macroquad::color::{Color, DARKGRAY};
 use macroquad::color_u8;
+use macroquad::input::mouse_position;
 use macroquad::math::f32;
 use macroquad::prelude::{
     BLACK, Camera2D, GRAY, MouseButton, Rect, RenderTarget, Vec2, WHITE, clear_background,
@@ -42,10 +43,19 @@ pub fn draw_map_and_path(
     selected: &Option<Vec<TreeView>>,
     rendered_lines: &RenderTarget,
     level: Option<usize>,
+    level_hovered: &Option<usize>,
 ) {
     if let Some(selected_nodes) = &selected {
         if selected_nodes.len() > 0 {
-            draw_path(units, width, height, font_size, &selected_nodes, level);
+            draw_path(
+                units,
+                width,
+                height,
+                font_size,
+                &selected_nodes,
+                level,
+                level_hovered,
+            );
             draw_colored_selected_in_map(&selected_nodes, level);
         }
     }
@@ -59,10 +69,11 @@ fn draw_path(
     font_size: f32,
     nested_nodes: &Vec<TreeView>,
     level_opt: Option<usize>,
+    level_hovered: &Option<usize>,
 ) {
     let (node_name_widths, top_left, text_rects) =
         compute_path_widths(width, height, font_size, nested_nodes);
-    draw_path_color(text_rects, level_opt);
+    draw_path_color(text_rects, level_opt, level_hovered);
     draw_path_text(
         units,
         top_left,
@@ -112,8 +123,10 @@ fn path_rects(top_left: Vec2, font_size: f32, node_name_widths: &VecDeque<f32>) 
 pub fn update_selected_level(
     text_rects: &Vec<Rect>,
     level_opt: &mut Option<usize>,
+    level_hovered: &mut Option<usize>,
     refresh_lines: &mut bool,
 ) {
+    let mut any_hovered = false;
     for (i, rect) in text_rects.iter().enumerate() {
         if is_rect_clicked(rect, MouseButton::Left) {
             set_if_different_or_unset_if_same(level_opt, i);
@@ -124,9 +137,16 @@ pub fn update_selected_level(
             *level_opt = None;
             return;
         }
+        if rect.contains(Vec2::from(mouse_position())) {
+            *level_hovered = Some(i);
+            any_hovered = true;
+        }
+    }
+    if !any_hovered {
+        *level_hovered = None;
     }
 }
-fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>) {
+fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>, level_hovered: &Option<usize>) {
     for (i, rect) in text_rects.into_iter().enumerate() {
         if level_opt.is_some_and(|level| level < i) {
             draw_rectangle_lines(
@@ -139,6 +159,9 @@ fn draw_path_color(text_rects: Vec<Rect>, level_opt: Option<usize>) {
             );
         } else {
             draw_rect(rect, COLORS[i % COLORS.len()]);
+        }
+        if level_hovered.is_some_and(|level| level == i) {
+            draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 2.0, DARKGRAY);
         }
     }
 }
