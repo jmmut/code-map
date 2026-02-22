@@ -22,7 +22,7 @@ pub const GIT_VERSION: &str = git_version!(args = ["--tags"]);
 #[derive(Parser, Clone)]
 #[command(author, version = GIT_VERSION, about, long_about = None)]
 pub struct Cli {
-    /// plot file sizes under this folder
+    /// plot metrics for this folder
     #[arg(default_value = ".")]
     pub input_folder: PathBuf,
 
@@ -42,10 +42,9 @@ pub struct Cli {
     // #[arg(short = 'x', long, default_value = false)]
     // pub all_extensions: bool,
     //
-    /// Padding in pixels between hierarchies (e.g. 4) (only for linear arrangement)
-    #[arg(short, long, default_value = "0")]
-    pub padding: f32,
-
+    // /// Padding in pixels between hierarchies (e.g. 4) (only for linear arrangement)
+    // #[arg(short, long, default_value = "0")]
+    // pub padding: f32,
     /// maximum number of commits to consider (only for churn-per-file metric)
     #[arg(long)]
     pub max_commits: Option<usize>,
@@ -68,6 +67,9 @@ async fn fallible_main() -> Result<(), AnyError> {
     let args = Cli::parse();
     let mut ui = compute_ui(args.clone())?;
     loop {
+        if ui.should_refresh() {
+            ui = log_time!(compute_ui(args.clone())?, "rearrange");
+        }
         ui.react();
         if ui.should_quit() {
             break;
@@ -76,9 +78,6 @@ async fn fallible_main() -> Result<(), AnyError> {
         ui.draw()
         // )
         ;
-        if ui.should_refresh() {
-            ui = log_time!(compute_ui(args.clone())?, "rearrange");
-        }
         next_frame().await
     }
     Ok(())
@@ -89,7 +88,7 @@ fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
     let Cli {
         input_folder,
         exclude,
-        padding,
+        // padding,
         arrangement,
         metric,
         // all_extensions,
@@ -113,7 +112,8 @@ fn compute_ui(args: Cli) -> Result<Ui, AnyError> {
         units,
         arrange,
         arrangement.clone(),
-        padding,
+        // padding,
+        0.0,
         screen_size,
     );
     log_time!(log_counts(&ui.tree));

@@ -1,21 +1,57 @@
 # code-map
 
+Run `code-map` in your git repo to get an interactive visualization of which files have been modified more often,
+or which are the biggest files.
+
+IMO visualizing commits per file is very useful when you are faced with a new repo,
+because I claim that the files with more commits are either the places you'll need to modify for a new feature,
+or files which have tech debt, and getting to know those files is useful to get up to speed with the new repo.
+
+If you think of the opposite, good extensible code doesn't get modified often.
+This project probably doesn't help finding those good pieces of code, though.
+
+You can also visualise other metrics like file size or lines per file, even in non-git folders.
+For example if you want to free space in your disk,
+this tool will help you find which are the biggest folders and files,
+and from those you can delete the ones you don't need.
+By [Amdahl's law](https://en.wikipedia.org/wiki/Amdahl%27s_law),
+the first files you delete this way will make the most impact freeing up space.
+
+Note that running this tool on your whole disk might be slow.
+In my 360 GB SSD partition it takes ~23 seconds to read all file sizes,
+and it might be even slower if the disk is cold.
+After that, the tool should be fast enough to still be interactive.
+
 ## Running this project
 
-You can clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release`.
+You can clone this repo, then [Install rust](https://www.rust-lang.org/tools/install), then do `cargo run --release -- --help`.
 
-Then you can install the binary in your PATH with `cargo install --path .`, and then you can do `code-map` from anywhere. Run `code-map --help` to see the available options.
+I suggest installing the binary in your PATH with `cargo install --path .`,
+and then you can do `code-map --help` from anywhere.
+
+### Example usages
+
+- commits per file in the current directory: `code-map`
+- bytes per file in the current directory: `code-map --metric bytes-per-file` or `code-map -m b`
+- commits per file in some directory: `code-map ~/some/dir`
+
+See all available options with `code-map --help`.
+
 
 ### Searching
 
-You can search for a file by typing a substring in the search box.
+In the main screen, you can search for a file by typing a substring in the search box.
 Click on the box or press 'f' to start searching.
 The search is case-insensitive and fuzzy, so you can type `config man` to find `ConfigurationManager`.
-From the dropdown you can only select the first entry, selecting others or moving the cursor is not implemented
+From the dropdown you can only select the first entry, selecting others or moving the cursor is not implemented.
 
 ## Metrics
 
-You can choose different metrics to plot. Each metric assigns a number to each node in a tree. The tree, nodes and metrics can be computed from different sources, but the most common use case is to compute them from a directory tree, where each node is a directory or a file.
+You can choose different metrics to plot.
+Each metric assigns a number to each node in a tree.
+The tree, nodes and metrics can be computed from different sources,
+but the most common use case is to compute them from a directory tree,
+where each node is a directory or a file.
 
 ### Bytes per file
 
@@ -77,7 +113,7 @@ This arrangement is not great when a node has many children. The children will b
 
 Manually tweaked version of the binary arrangement.
 It tries to maximize squareness by using an empirically chosen ratio of how many items to put in the first division of a bigger rectangle.
-It might be worse than binary on some dataseets.
+It might be worse than binary on some datasets.
 
 ## Roadmap
 

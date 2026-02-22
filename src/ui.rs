@@ -174,8 +174,8 @@ impl Ui {
 
         self.searcher.draw_search();
         self.buttons.draw();
-        if self.refresh_lines || self.refresh {
-            // self.draw_regenerate_warning();
+        if self.refresh {
+            self.draw_regenerate_warning();
         }
     }
 
@@ -198,7 +198,7 @@ impl Ui {
     }
 
     fn draw_regenerate_warning(&self) {
-        draw_pop_up("Re-drawing grid...", self.map_rect.center(), self.font_size);
+        draw_pop_up("Reloading...", self.map_rect.center(), self.font_size);
     }
 
     fn rearrange(&mut self, new_screen_size: Vec2) {
