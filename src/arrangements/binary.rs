@@ -155,7 +155,7 @@ mod tests {
             children.push(Tree::new_from_size(format!("child_{}", i), i));
         }
         let mut tree = Tree::new_from_children("parent".to_string(), children);
-        linear::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0), 0.0);
+        linear::arrange(&mut tree, Rect::new(0.0, 0.0, 1000.0, 1000.0), 0.0);
         let squareness_linear = average_squareness(
             &tree
                 .children
@@ -165,7 +165,7 @@ mod tests {
         );
         let area_linear = area(&tree.children);
 
-        arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        arrange(&mut tree, Rect::new(0.0, 0.0, 1000.0, 1000.0));
         let squareness_binary = average_squareness(
             &tree
                 .children
@@ -175,7 +175,7 @@ mod tests {
         );
         let area_binary = area(&tree.children);
 
-        golden::arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        golden::arrange(&mut tree, Rect::new(0.0, 0.0, 1000.0, 1000.0));
         let squareness_golden = average_squareness(
             &tree
                 .children
@@ -190,6 +190,12 @@ mod tests {
             "{} < {}",
             squareness_binary,
             squareness_linear
+        );
+        assert!(
+            squareness_golden > squareness_binary,
+            "{} < {}",
+            squareness_golden,
+            squareness_binary
         );
         println!("squareness of binary::arrange: {}", squareness_binary);
         println!("squareness of linear::arrange: {}", squareness_linear);
@@ -206,11 +212,11 @@ mod tests {
             children.push(Tree::new_from_size(format!("child_{}", i), 1));
         }
         let mut tree = Tree::new_from_children("parent".to_string(), children);
-        arrange(&mut tree, Rect::new(0.0, 0.0, 1.0, 1.0));
+        arrange(&mut tree, Rect::new(0.0, 0.0, 1000.0, 1000.0));
         assert_eq!(tree.children.len(), children_count);
         for child in &mut tree.children {
             let r = child.rect.unwrap();
-            assert_eq!(r.w * r.h, 1.0 / children_count as f32);
+            assert_eq!(r.w * r.h, 1000000.0 / children_count as f32);
         }
     }
 
