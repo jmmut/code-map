@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use macroquad::prelude::{error, warn};
+use macroquad::prelude::{error, warn, info};
 
 use crate::AnyError;
 use crate::metrics::bytes_per_file::has_allowed_extension;
@@ -30,7 +30,11 @@ pub fn word_mentions(folder: &PathBuf) -> Result<Tree, AnyError> {
     for (word, count) in mentions {
         nodes.push(Tree::new_from_size(word, count));
     }
-    Ok(Tree::new_from_children("".to_string(), nodes))
+    let unique_words = nodes.len();
+    let mut tree = Tree::new_from_children("".to_string(), nodes);
+    let total_words = tree.get_or_compute_size();
+    info!("Total words: {}. Unique words: {}", total_words, unique_words);
+    Ok(tree)
 }
 
 fn word_mentions_recursive(
